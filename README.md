@@ -77,6 +77,7 @@ npm run build
 ├── docs/
 │   ├── deployment.md        # 部署指南
 │   ├── user-guide.md        # 社工操作手冊
+│   ├── output-format.md     # PDF / DOCX 版面要改哪裡（給開發者）
 │   └── apps-script.gs       # Google Apps Script 程式碼
 └── examples/
     └── employees-template.csv  # 員工主檔範例格式
@@ -93,6 +94,8 @@ npm run build
 5. **登錄表標題**：搜尋「身心障礙者服務人員在職訓練登錄表」，改成適用的表單名稱
 
 改完後跑 `npm run build` 重新打包。
+
+要修改 PDF 證書或 DOCX 登錄表的**版面、樣式或欄位**（例如改字級、印章大小、增減欄位）：請看 [docs/output-format.md](docs/output-format.md)，裡面標明了每個區塊對應到 `src/index.html` 的哪一段（含行號與錨點字串）。
 
 ## 相依函式庫
 
