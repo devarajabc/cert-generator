@@ -2557,7 +2557,7 @@ function init() {
   renderEmployeeTable();
 }
 
-init();
+if (typeof __SKIP_INIT__ === 'undefined') init(); // test-only sentinel; set var __SKIP_INIT__ before eval
 </script>
 </body>
 </html>

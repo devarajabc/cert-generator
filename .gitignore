@@ -20,3 +20,8 @@ Thumbs.db
 # 注意：dist/ 不 ignore，因為要讓使用者直接從 repo 下載打包好的 HTML
 # Added by code-review-graph
 .code-review-graph/
+
+# 測試輸出
+test-results/
+playwright-report/
+coverage/
