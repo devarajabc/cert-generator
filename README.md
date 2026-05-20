@@ -1,5 +1,7 @@
 # 研習證明書產生系統
 
+[![CI](https://github.com/devarajabc/cert-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/devarajabc/cert-generator/actions/workflows/ci.yml)
+
 一個給日間照護中心、社福機構使用的研習證明書批次產生工具，協助社工把以往「手動複製貼上」的繁瑣作業自動化。
 此外我認為微軟的巨集功能句難用且不直觀
 版本依賴性問題也搞得亂七八糟
