@@ -1,0 +1,22 @@
+# 相依
+node_modules/
+
+# 系統檔
+.DS_Store
+Thumbs.db
+*.log
+
+# 編輯器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 暫存
+*.tmp
+*.bak
+
+# 注意：dist/ 不 ignore，因為要讓使用者直接從 repo 下載打包好的 HTML
+# Added by code-review-graph
+.code-review-graph/

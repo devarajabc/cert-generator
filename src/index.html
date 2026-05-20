@@ -1,0 +1,2563 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>研習證明書產生系統 — 原型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.18.5/package/dist/xlsx.mini.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+<style>
+  :root {
+    --bg: #f7f4ed;
+    --bg-card: #ffffff;
+    --bg-subtle: #ede8dc;
+    --bg-hover: #f0ebde;
+    --primary: #2f5d50;
+    --primary-hover: #234539;
+    --primary-soft: #d8e3df;
+    --primary-softer: #e8efeb;
+    --accent: #b95c4a;
+    --accent-hover: #9c4a3a;
+    --accent-soft: #f0d9d3;
+    --text: #2a2a28;
+    --text-muted: #6e6c66;
+    --text-light: #9a978d;
+    --border: #ddd5c4;
+    --border-strong: #c0b69e;
+    --error: #c0392b;
+    --success: #4a7c5c;
+    --warn: #b88a2e;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans TC', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .font-serif { font-family: 'Noto Serif TC', serif; }
+
+  /* Header */
+  header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+  }
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.25rem 2rem 0;
+  }
+  .title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  h1 {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0;
+    letter-spacing: 0.02em;
+  }
+  h1 .accent {
+    color: var(--accent);
+    font-weight: 400;
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+  }
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 0;
+  }
+  .tab {
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding: 0.85rem 1.5rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 500;
+    position: relative;
+    top: 1px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 600;
+  }
+
+  /* Main */
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .panel-title {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 1.4rem;
+    color: var(--text);
+    margin: 0;
+    font-weight: 600;
+  }
+  .panel-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .card-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 0 0 0.25rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .card-step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: 'Noto Serif TC', serif;
+  }
+  .card-hint {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0 0 1rem;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-card);
+    color: var(--text);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.12s;
+    text-decoration: none;
+  }
+  .btn:hover { background: var(--bg-hover); border-color: var(--primary); }
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+  .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: white; }
+  .btn-accent {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  .btn-accent:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: white; }
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-muted);
+  }
+  .btn-ghost:hover { background: var(--bg-hover); color: var(--text); border-color: transparent; }
+  .btn-danger { color: var(--error); border-color: var(--border); }
+  .btn-danger:hover { background: #fbe9e7; border-color: var(--error); color: var(--error); }
+  .btn-large {
+    padding: 0.7rem 1.4rem;
+    font-size: 1rem;
+  }
+  .btn-block {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+  }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .btn:disabled:hover {
+    background: var(--bg-card);
+    border-color: var(--border-strong);
+    color: var(--text);
+  }
+  .btn-primary:disabled:hover {
+    background: var(--primary);
+    color: white;
+  }
+
+  /* Forms */
+  .field { margin-bottom: 1rem; }
+  .field-row { display: grid; gap: 1rem; }
+  .field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 0.35rem;
+  }
+  .label .required { color: var(--error); margin-left: 0.15rem; }
+  .input, .select {
+    display: block;
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--text);
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    border-radius: 5px;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  .input:focus, .select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-softer);
+  }
+  .input.error { border-color: var(--error); }
+  .input-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+  }
+  .input-hint.roc {
+    color: var(--primary);
+    font-weight: 500;
+    font-family: 'Noto Serif TC', serif;
+  }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .search-box {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+    max-width: 320px;
+  }
+  .search-box input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2rem;
+    font-family: inherit;
+    font-size: 0.9rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 5px;
+    background: var(--bg-card);
+  }
+  .search-box input:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  .search-box::before {
+    content: '';
+    position: absolute;
+    left: 0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236e6c66' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='m21 21-4.3-4.3'/></svg>");
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+  .toolbar-spacer { flex: 1; }
+
+  /* Table */
+  .table-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+  th, td {
+    text-align: left;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: var(--bg-subtle);
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.85rem;
+    border-bottom-color: var(--border-strong);
+  }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--bg-hover); }
+  td .actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
+  td .actions .btn { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+  }
+  .empty-state-title {
+    font-size: 1.05rem;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+  }
+  .empty-state-hint { font-size: 0.9rem; margin-bottom: 1.25rem; }
+
+  /* Employee selector */
+  .selector-wrap {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg-card);
+  }
+  .selector-header {
+    background: var(--bg-subtle);
+    padding: 0.6rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .selector-count {
+    font-size: 0.88rem;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .selector-count .count {
+    color: var(--primary);
+    font-weight: 700;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 1rem;
+  }
+  .selector-list {
+    max-height: 360px;
+    overflow-y: auto;
+  }
+  .selector-item {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .selector-item:hover { background: var(--bg-hover); }
+  .selector-item:last-child { border-bottom: none; }
+  .selector-item input[type="checkbox"] {
+    margin-right: 0.75rem;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary);
+  }
+  .selector-item-info { flex: 1; }
+  .selector-item-name { font-weight: 500; color: var(--text); }
+  .selector-item-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.1rem;
+  }
+  .selector-item.selected { background: var(--primary-softer); }
+  .selector-item.selected:hover { background: var(--primary-soft); }
+
+  /* Courses */
+  .courses-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .courses-table th {
+    background: var(--bg-subtle);
+    font-size: 0.83rem;
+    padding: 0.55rem 0.75rem;
+  }
+  .courses-table td {
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .courses-table input {
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    font-family: inherit;
+    font-size: 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-card);
+  }
+  .courses-table input:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  .courses-table .col-hours { width: 90px; }
+  .courses-table .col-actions { width: 60px; text-align: center; }
+  .courses-table .btn-remove {
+    background: transparent;
+    border: 0;
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 0.3rem;
+    font-size: 1.1rem;
+    line-height: 1;
+    border-radius: 3px;
+  }
+  .courses-table .btn-remove:hover { color: var(--error); background: var(--accent-soft); }
+  .total-row {
+    background: var(--primary-softer);
+    font-weight: 600;
+  }
+  .total-row td {
+    color: var(--primary);
+    font-family: 'Noto Serif TC', serif;
+    font-size: 1.05rem;
+  }
+
+  /* Action bar */
+  .action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.5rem;
+    margin-top: 1.5rem;
+  }
+  .action-bar-summary {
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+  .action-bar-summary strong {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 1.1rem;
+    color: var(--primary);
+    font-weight: 700;
+    margin: 0 0.2rem;
+  }
+  .action-bar-buttons { display: flex; gap: 0.6rem; }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(42, 42, 40, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 1.5rem;
+  }
+  .modal-backdrop.hidden { display: none; }
+  .modal {
+    background: var(--bg-card);
+    border-radius: 8px;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.18);
+    max-width: 540px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal.wide { max-width: 800px; }
+  .modal.xwide { max-width: 960px; }
+  .modal-header {
+    padding: 1.25rem 1.5rem 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .modal-title {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+  }
+  .modal-close {
+    background: none;
+    border: 0;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.2rem 0.5rem;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 1.25rem 1.5rem; }
+  .modal-footer {
+    padding: 0.85rem 1.5rem 1.25rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    border-top: 1px solid var(--border);
+    background: var(--bg-subtle);
+    border-radius: 0 0 8px 8px;
+  }
+
+  /* Certificate preview */
+  .cert-preview {
+    background: white;
+    border: 1px solid var(--border);
+    padding: 3rem 3.5rem;
+    margin: 0 auto;
+    font-family: 'DFKai-SB', '標楷體', 'BiauKai', 'Kaiti TC', 'Noto Serif TC', serif;
+    color: #1a1a1a;
+    line-height: 1.9;
+    font-size: 15px;
+    max-width: 720px;
+  }
+  .cert-preview .cert-title {
+    text-align: center;
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    margin: 0 0 1.8rem;
+    padding-right: 0.3em;
+  }
+  .cert-preview .cert-meta {
+    text-align: right;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+  }
+  .cert-preview .cert-meta-line {
+    margin-bottom: 0.3rem;
+  }
+  .cert-preview .cert-meta-doc { margin-bottom: 0; }
+  .cert-preview .cert-person {
+    margin: 1.2rem 0;
+    font-size: 1rem;
+  }
+  .cert-preview .cert-body {
+    margin: 1.2rem 0;
+    text-indent: 2em;
+    font-size: 1rem;
+  }
+  .cert-preview .cert-attest {
+    text-align: center;
+    margin: 1.5rem 0;
+    letter-spacing: 0.5em;
+    font-size: 1.1rem;
+    padding-left: 0.5em;
+  }
+  .cert-preview table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 1.2rem 0;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .cert-preview th, .cert-preview td {
+    border-right: 1px solid #333;
+    border-bottom: 1px solid #333;
+    padding: 0.4rem 0.6rem;
+    text-align: center;
+    font-size: 0.9rem;
+  }
+  .cert-preview th {
+    background: #f3efe6;
+    font-weight: 600;
+    border-top: 1px solid #333;
+  }
+  .cert-preview th:first-child,
+  .cert-preview td:first-child {
+    border-left: 1px solid #333;
+  }
+  .cert-preview .cert-signature {
+    margin-top: 2.5rem;
+    padding: 0 1.5rem;
+  }
+  .cert-preview .cert-org-line {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.05rem;
+    margin-bottom: 1.75rem;
+  }
+  .cert-preview .cert-director-line {
+    display: flex;
+    align-items: center;
+    font-size: 1.05rem;
+    padding: 0 3rem 0 5rem;
+    gap: 4rem;
+  }
+  .cert-preview .director-label {
+    flex-shrink: 0;
+  }
+  .cert-preview .seal-placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    border: 1.5px dashed #c0392b;
+    color: #c0392b;
+    font-size: 0.7rem;
+    font-family: 'Noto Sans TC', sans-serif;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .cert-preview .signature-placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    width: 110px;
+    border: 1.5px dashed #1e4e8c;
+    color: #1e4e8c;
+    font-size: 0.7rem;
+    font-family: 'Noto Sans TC', sans-serif;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .cert-preview .cert-date-bottom {
+    text-align: center;
+    margin-top: 2rem;
+    font-size: 1rem;
+  }
+
+  /* Generate result modal */
+  .result-section {
+    margin-bottom: 1.25rem;
+  }
+  .result-section h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 0.5rem;
+  }
+  .result-file-list {
+    background: var(--bg-subtle);
+    border-radius: 5px;
+    padding: 0.75rem 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .result-file-list div {
+    padding: 0.15rem 0;
+    color: var(--text);
+  }
+  .result-file-list div::before {
+    content: '📄 ';
+    margin-right: 0.4rem;
+  }
+  .result-file-list .docx::before { content: '📋 '; }
+
+  .notice {
+    background: var(--primary-softer);
+    border-left: 3px solid var(--primary);
+    padding: 0.75rem 1rem;
+    border-radius: 0 4px 4px 0;
+    font-size: 0.88rem;
+    color: var(--text);
+    margin-bottom: 1rem;
+  }
+  .notice strong { color: var(--primary); }
+  .notice-warn {
+    background: #fdf6e6;
+    border-left-color: var(--warn);
+  }
+  .notice-warn strong { color: var(--warn); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--text);
+    color: white;
+    padding: 0.75rem 1.25rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    z-index: 200;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--error); }
+
+  /* History placeholder */
+  .placeholder-history {
+    background: var(--bg-card);
+    border: 1px dashed var(--border-strong);
+    border-radius: 6px;
+    padding: 3rem 2rem;
+    text-align: center;
+  }
+  .placeholder-history .icon {
+    font-size: 2.5rem;
+    color: var(--text-light);
+    margin-bottom: 1rem;
+  }
+  .placeholder-history p {
+    color: var(--text-muted);
+    margin: 0.5rem 0;
+  }
+
+  /* Banner for prototype */
+  .proto-banner {
+    background: linear-gradient(135deg, #fdf6e6 0%, #faeed1 100%);
+    border-bottom: 1px solid #e8d8a0;
+    padding: 0.55rem 2rem;
+    text-align: center;
+    font-size: 0.82rem;
+    color: #826014;
+  }
+  .proto-banner strong { font-weight: 600; }
+
+  /* Date input group */
+  .date-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .date-group .input { padding: 0.5rem 0.6rem; }
+  .date-group .year { width: 70px; text-align: center; }
+  .date-group .month, .date-group .day { width: 55px; text-align: center; }
+  .date-group .label-inline {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 800px) {
+    .header-inner, main { padding-left: 1rem; padding-right: 1rem; }
+    .field-row.cols-2, .field-row.cols-3 { grid-template-columns: 1fr; }
+    .cert-preview { padding: 2rem 1.5rem; }
+  }
+
+  /* PDF 渲染容器（A4 尺寸）。位置藏在 DOM 中、被進度 modal 蓋住，但保留實際渲染。 */
+  .pdf-render-wrap {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm;
+    background: white;
+    z-index: -1;
+    pointer-events: none;
+  }
+  .pdf-cert {
+    width: 210mm;
+    padding: 25mm 25mm;
+    background: white;
+    color: #000;
+    font-family: 'DFKai-SB', '標楷體', 'BiauKai', 'Kaiti TC', 'Noto Serif TC', serif;
+    font-size: 14pt;
+    line-height: 1.9;
+    box-sizing: border-box;
+  }
+  .pdf-cert .cert-title {
+    text-align: center;
+    font-size: 32pt;
+    font-weight: 700;
+    letter-spacing: 0.5em;
+    margin: 0 0 1.5em;
+    padding-right: 0.5em;
+  }
+  .pdf-cert .cert-meta {
+    text-align: right;
+    font-size: 12pt;
+    margin-bottom: 1em;
+    line-height: 1.7;
+  }
+  .pdf-cert .cert-person { margin: 1em 0; font-size: 13pt; }
+  .pdf-cert .cert-body { margin: 0.8em 0; font-size: 13pt; }
+  .pdf-cert .cert-attest {
+    margin: 1em 0;
+    font-size: 14pt;
+    letter-spacing: 0.5em;
+    padding-left: 0.5em;
+  }
+  .pdf-cert table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 1em 0;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .pdf-cert th, .pdf-cert td {
+    border-right: 1px solid #000;
+    border-bottom: 1px solid #000;
+    padding: 6pt 8pt;
+    text-align: center;
+    font-size: 12pt;
+  }
+  .pdf-cert th {
+    font-weight: 600;
+    border-top: 1px solid #000;
+  }
+  .pdf-cert th:first-child,
+  .pdf-cert td:first-child {
+    border-left: 1px solid #000;
+  }
+  .pdf-cert .cert-signature {
+    margin-top: 2em;
+    padding: 0 10pt;
+  }
+  .pdf-cert .cert-org-line {
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+    margin-bottom: 1.5em;
+    font-size: 13pt;
+  }
+  .pdf-cert .cert-director-line {
+    display: flex;
+    align-items: center;
+    gap: 40pt;
+    padding: 0 30pt 0 60pt;
+    font-size: 13pt;
+  }
+  .pdf-cert .seal-img-inst {
+    width: 70pt;
+    height: 70pt;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+  .pdf-cert .seal-img-dir {
+    height: 50pt;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+  .pdf-cert .seal-placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 70pt;
+    height: 70pt;
+    border: 1.5pt dashed #c0392b;
+    color: #c0392b;
+    font-size: 9pt;
+    border-radius: 3pt;
+    flex-shrink: 0;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .pdf-cert .signature-placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 40pt;
+    width: 110pt;
+    border: 1.5pt dashed #1e4e8c;
+    color: #1e4e8c;
+    font-size: 9pt;
+    border-radius: 3pt;
+    flex-shrink: 0;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .pdf-cert .cert-date-bottom {
+    text-align: center;
+    margin-top: 2em;
+    font-size: 13pt;
+  }
+
+  /* 進度條 */
+  .progress-modal {
+    text-align: center;
+    padding: 1.5rem 0;
+  }
+  .progress-status {
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+  .progress-detail {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    min-height: 1.2em;
+  }
+  .progress-bar-wrap {
+    height: 8px;
+    background: var(--bg-subtle);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--primary);
+    transition: width 0.3s;
+    border-radius: 4px;
+  }
+  .progress-pct {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 1.1rem;
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  /* 印章預覽 */
+  .seal-preview-wrap {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #fdfaf0;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .seal-preview-wrap img {
+    display: block;
+    max-width: 80px;
+    max-height: 80px;
+  }
+
+  /* 程式碼區塊 */
+  .code-block {
+    background: #1e2a26;
+    color: #d8e3df;
+    padding: 1rem 1.25rem;
+    border-radius: 6px;
+    font-family: 'Courier New', 'Menlo', monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 0.75rem 0;
+  }
+  .step-list {
+    counter-reset: step;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .step-list li {
+    counter-increment: step;
+    padding: 0.4rem 0 0.4rem 2.5rem;
+    position: relative;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+  .step-list li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0.45rem;
+    width: 1.6rem;
+    height: 1.6rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+  details.advanced {
+    margin-top: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0;
+    background: var(--bg-subtle);
+  }
+  details.advanced summary {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text);
+    user-select: none;
+  }
+  details.advanced[open] summary { border-bottom: 1px solid var(--border); }
+  details.advanced .details-body { padding: 1rem; }
+</style>
+</head>
+<body>
+
+<div class="proto-banner">
+  <strong>v0.4.2 內嵌版</strong> ・ 登錄表改為每堂課一份；修正表格底線；全部函式庫內嵌。
+</div>
+
+<header>
+  <div class="header-inner">
+    <div class="title-row">
+      <h1>研習證明書產生系統<span class="accent">v0.4.2</span></h1>
+      <div class="subtitle">財團法人台南市私立天主教瑞復益智中心</div>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="employees">員工主檔</button>
+      <button class="tab" data-tab="generate">產生證書</button>
+      <button class="tab" data-tab="history">歷史紀錄</button>
+      <button class="tab" data-tab="settings">設定</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============ 員工主檔 ============ -->
+  <section class="tab-panel active" id="panel-employees">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">員工主檔</h2>
+        <div class="panel-subtitle">資料只存在這台電腦的瀏覽器中。請定期匯出 Excel 備份。</div>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <input type="file" id="import-excel" accept=".xlsx,.xls,.csv" style="display:none">
+        <button class="btn" onclick="document.getElementById('import-excel').click()">匯入 Excel</button>
+        <button class="btn" onclick="exportEmployeesExcel()">匯出 Excel</button>
+        <button class="btn btn-primary" onclick="openEmployeeModal()">＋ 新增員工</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <input type="text" id="search-employees" placeholder="搜尋姓名或身分證..." oninput="renderEmployeeTable()">
+      </div>
+      <div class="toolbar-spacer"></div>
+      <div style="font-size: 0.88rem; color: var(--text-muted);">
+        共 <span id="emp-count" style="color: var(--primary); font-weight: 600;">0</span> 位員工
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 18%;">姓名</th>
+            <th style="width: 15%;">職稱</th>
+            <th style="width: 25%;">身分證字號</th>
+            <th style="width: 27%;">生日</th>
+            <th style="width: 15%; text-align: right;">操作</th>
+          </tr>
+        </thead>
+        <tbody id="employee-tbody"></tbody>
+      </table>
+      <div id="employee-empty" class="empty-state" style="display: none;">
+        <div class="empty-state-title">尚無員工資料</div>
+        <div class="empty-state-hint">新增第一位員工，或匯入 Excel 名冊</div>
+        <button class="btn btn-primary" onclick="openEmployeeModal()">＋ 新增第一位員工</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 產生證書 ============ -->
+  <section class="tab-panel" id="panel-generate">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">產生研習證明書</h2>
+        <div class="panel-subtitle">選擇參加員工 → 填寫訓練資訊與課程 → 一鍵產出 PDF 與登錄表</div>
+      </div>
+    </div>
+
+    <!-- Step 1: 選人 -->
+    <div class="card">
+      <div class="card-title"><span class="card-step">1</span> 選擇參加員工</div>
+      <div class="card-hint">勾選這次參加訓練的員工。可使用上方搜尋框快速找人。</div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <input type="text" id="search-selector" placeholder="搜尋姓名..." oninput="renderSelector()">
+        </div>
+        <button class="btn btn-ghost" onclick="selectAllVisible(true)">全選</button>
+        <button class="btn btn-ghost" onclick="selectAllVisible(false)">全部取消</button>
+      </div>
+
+      <div class="selector-wrap">
+        <div class="selector-header">
+          <div class="selector-count">
+            已選 <span class="count" id="selected-count">0</span> 位
+          </div>
+          <div style="font-size: 0.83rem; color: var(--text-muted);" id="selector-total"></div>
+        </div>
+        <div class="selector-list" id="selector-list"></div>
+      </div>
+    </div>
+
+    <!-- Step 2: 訓練資訊 -->
+    <div class="card">
+      <div class="card-title"><span class="card-step">2</span> 訓練資訊</div>
+      <div class="card-hint">日期欄請輸入「民國年」三碼。例如 114 表示民國 114 年。</div>
+
+      <div class="field-row cols-2">
+        <div class="field">
+          <label class="label">文號 <span class="required">*</span></label>
+          <input type="text" class="input" id="t-docnum" placeholder="例：114001">
+          <div class="input-hint">將顯示為：南市社身字第 <span id="docnum-preview" style="color: var(--primary); font-weight: 600;">XXX</span> 號</div>
+        </div>
+        <div class="field">
+          <label class="label">辦理單位</label>
+          <input type="text" class="input" id="t-org" value="財團法人台南市私立天主教瑞復益智中心">
+        </div>
+      </div>
+
+      <div class="field-row cols-3">
+        <div class="field">
+          <label class="label">社會局核發/備查日期 <span class="required">*</span></label>
+          <div class="date-group">
+            <span class="label-inline">民國</span>
+            <input type="number" class="input year" id="t-issuedate-y" placeholder="114" min="1" max="200">
+            <span class="label-inline">年</span>
+            <input type="number" class="input month" id="t-issuedate-m" placeholder="月" min="1" max="12">
+            <span class="label-inline">月</span>
+            <input type="number" class="input day" id="t-issuedate-d" placeholder="日" min="1" max="31">
+            <span class="label-inline">日</span>
+          </div>
+          <div class="input-hint">顯示在證書頂部右側</div>
+        </div>
+        <div class="field">
+          <label class="label">訓練辦理日期 <span class="required">*</span></label>
+          <div class="date-group">
+            <span class="label-inline">民國</span>
+            <input type="number" class="input year" id="t-traindate-y" placeholder="114" min="1" max="200">
+            <span class="label-inline">年</span>
+            <input type="number" class="input month" id="t-traindate-m" placeholder="月" min="1" max="12">
+            <span class="label-inline">月</span>
+            <input type="number" class="input day" id="t-traindate-d" placeholder="日" min="1" max="31">
+            <span class="label-inline">日</span>
+          </div>
+          <div class="input-hint">用於檔名與登錄表</div>
+        </div>
+        <div class="field">
+          <label class="label">證書簽發日期 <span class="required">*</span></label>
+          <div class="date-group">
+            <span class="label-inline">民國</span>
+            <input type="number" class="input year" id="t-signdate-y" placeholder="114" min="1" max="200">
+            <span class="label-inline">年</span>
+            <input type="number" class="input month" id="t-signdate-m" placeholder="月" min="1" max="12">
+            <span class="label-inline">月</span>
+            <input type="number" class="input day" id="t-signdate-d" placeholder="日" min="1" max="31">
+            <span class="label-inline">日</span>
+          </div>
+          <div class="input-hint">顯示在證書底部，預設為今天</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: 課程 -->
+    <div class="card">
+      <div class="card-title"><span class="card-step">3</span> 課程清單</div>
+      <div class="card-hint">課程列數可隨意增減。總時數會自動加總。</div>
+
+      <table class="courses-table">
+        <thead>
+          <tr>
+            <th>課程名稱</th>
+            <th style="width: 30%;">講師</th>
+            <th class="col-hours">時數</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody id="courses-tbody"></tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="2" style="text-align: right;">總時數</td>
+            <td><span id="total-hours">0</span> 小時</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div style="margin-top: 0.75rem;">
+        <button class="btn" onclick="addCourse()">＋ 新增課程</button>
+      </div>
+    </div>
+
+    <!-- Action bar -->
+    <div class="action-bar">
+      <div class="action-bar-summary">
+        將為 <strong id="summary-count">0</strong> 位員工，產出 <strong id="summary-count2">0</strong> 張 PDF 證書 + <strong id="summary-courses">0</strong> 份登錄表
+      </div>
+      <div class="action-bar-buttons">
+        <button class="btn" onclick="previewCertificate()">預覽第一張</button>
+        <button class="btn btn-accent btn-large" onclick="generateAll()">全部產生</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 歷史紀錄 ============ -->
+  <section class="tab-panel" id="panel-history">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">歷史紀錄</h2>
+        <div class="panel-subtitle">每張發出的證書都會自動寫入 Google 試算表</div>
+      </div>
+      <button class="btn btn-primary" id="open-sheet-btn" onclick="openHistorySheet()">前往試算表 →</button>
+    </div>
+
+    <div class="placeholder-history">
+      <div class="icon">📊</div>
+      <p><strong>正式版上線後</strong>：每次按下「全部產生」，會自動把這批證書（每人一列）寫入你指定的 Google 試算表。</p>
+      <p>欄位：訓練日期、文號、員工姓名、身分證字號、課程清單、總時數、發行時間戳</p>
+      <p style="margin-top: 1.5rem; font-size: 0.85rem;">本頁也可以直接嵌入試算表畫面，省得切換分頁。</p>
+    </div>
+  </section>
+
+  <!-- ============ 設定 ============ -->
+  <section class="tab-panel" id="panel-settings">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">設定</h2>
+        <div class="panel-subtitle">第一次使用時請先完成這頁，之後不用再動</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">印章圖檔</div>
+      <div class="card-hint">兩張印章圖會內嵌到 PDF 中。建議用 PNG 去背、約 600×600 像素。</div>
+      <div class="field-row cols-2">
+        <div class="field">
+          <label class="label">機構用印</label>
+          <input type="file" id="seal-inst-file" accept="image/png,image/jpeg">
+          <div class="input-hint">蓋在機構全名左側</div>
+          <div id="seal-inst-preview"></div>
+        </div>
+        <div class="field">
+          <label class="label">主任簽名章</label>
+          <input type="file" id="seal-dir-file" accept="image/png,image/jpeg">
+          <div class="input-hint">蓋在「主任」二字右側</div>
+          <div id="seal-dir-preview"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Google 試算表整合</div>
+      <div class="card-hint">設定後，每次產證書時會自動把發放紀錄寫入你指定的試算表。未設定也能正常產 PDF，只是不會自動記錄。</div>
+
+      <div class="field">
+        <label class="label">Apps Script Web App 網址</label>
+        <input type="url" class="input" id="setting-sheet-url" placeholder="https://script.google.com/macros/s/.../exec">
+        <div class="input-hint">下面有設定教學，跟著做即可（約 5 分鐘）</div>
+      </div>
+      <div class="field">
+        <label class="label">試算表瀏覽網址</label>
+        <input type="url" class="input" id="setting-sheet-view-url" placeholder="https://docs.google.com/spreadsheets/d/...">
+        <div class="input-hint">用於「歷史紀錄」分頁的「前往試算表」按鈕</div>
+      </div>
+
+      <details class="advanced">
+        <summary>📖 一次性設定教學（點開展開）</summary>
+        <div class="details-body">
+          <ol class="step-list">
+            <li>到 Google 試算表新建一張空白試算表，例如取名「研習證明發放紀錄」</li>
+            <li>上方選單「<strong>擴充功能 → Apps Script</strong>」</li>
+            <li>把編輯器裡預設的 <code>function myFunction() {}</code> 全部刪掉，貼上下面這段程式碼：</li>
+          </ol>
+          <div class="code-block" id="apps-script-code"></div>
+          <button class="btn" onclick="copyAppsScriptCode()" style="margin-bottom: 1rem;">📋 複製程式碼</button>
+          <ol class="step-list" start="4" style="counter-reset: step 3;">
+            <li>按上方💾圖示儲存（或 Ctrl+S）</li>
+            <li>右上角「<strong>部署 → 新增部署作業</strong>」</li>
+            <li>左側齒輪選「<strong>網頁應用程式</strong>」</li>
+            <li>「執行身分」選你自己；「存取權」選「<strong>所有人</strong>」</li>
+            <li>按「部署」，第一次會要求授權（按指示授權即可，最後可能要按「進階 → 前往未驗證的專案」）</li>
+            <li>部署完成後會給你一個網址（<code>https://script.google.com/macros/s/.../exec</code>），複製貼到上面的「Apps Script Web App 網址」欄位</li>
+            <li>再把試算表瀏覽網址貼到下方欄位</li>
+            <li>按下方「測試寫入」確認運作正常</li>
+          </ol>
+          <button class="btn btn-primary" onclick="testSheetWrite()" style="margin-top: 0.5rem;">🧪 測試寫入</button>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="card-title">字型偵測</div>
+      <div class="card-hint">證書與登錄表預設使用「標楷體」。Windows 系統內建有，不用額外安裝。</div>
+      <div id="font-detection-result" style="font-size: 0.92rem; margin-top: 0.5rem;">偵測中...</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">資料管理</div>
+      <div class="card-hint">員工主檔存在這台電腦的瀏覽器中。建議定期備份。</div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="btn" onclick="exportEmployeesExcel()">匯出員工主檔（Excel）</button>
+        <button class="btn btn-danger" onclick="clearAllData()">清除全部資料</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== 員工編輯 Modal ===== -->
+<div class="modal-backdrop hidden" id="modal-employee-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-emp-title">新增員工</h3>
+      <button class="modal-close" onclick="closeEmployeeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row cols-2">
+        <div class="field">
+          <label class="label">姓名 <span class="required">*</span></label>
+          <input type="text" class="input" id="emp-name" placeholder="例：王小明">
+        </div>
+        <div class="field">
+          <label class="label">職稱</label>
+          <input type="text" class="input" id="emp-title" placeholder="例：照顧服務員">
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">身分證字號 <span class="required">*</span></label>
+        <input type="text" class="input" id="emp-id" placeholder="例：A123456789" maxlength="10" style="text-transform: uppercase;">
+      </div>
+      <div class="field">
+        <label class="label">生日（民國） <span class="required">*</span></label>
+        <div class="date-group">
+          <span class="label-inline">民國</span>
+          <input type="number" class="input year" id="emp-birth-y" placeholder="年" min="1" max="200">
+          <span class="label-inline">年</span>
+          <input type="number" class="input month" id="emp-birth-m" placeholder="月" min="1" max="12">
+          <span class="label-inline">月</span>
+          <input type="number" class="input day" id="emp-birth-d" placeholder="日" min="1" max="31">
+          <span class="label-inline">日</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeEmployeeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveEmployee()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 證書預覽 Modal ===== -->
+<div class="modal-backdrop hidden" id="modal-preview-backdrop">
+  <div class="modal xwide">
+    <div class="modal-header">
+      <h3 class="modal-title">證書預覽（第一位員工）</h3>
+      <button class="modal-close" onclick="closePreviewModal()">×</button>
+    </div>
+    <div class="modal-body" style="background: var(--bg);">
+      <div id="cert-preview-content"></div>
+      <div class="notice" style="margin-top: 1rem;">
+        <strong>注意：</strong>這是 HTML 預覽。正式版會用相同版型輸出為 PDF，並含真實印章圖。
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closePreviewModal()">關閉預覽</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 產生結果 Modal ===== -->
+<div class="modal-backdrop hidden" id="modal-result-backdrop">
+  <div class="modal wide">
+    <div class="modal-header">
+      <h3 class="modal-title">模擬產生結果</h3>
+      <button class="modal-close" onclick="closeResultModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="notice notice-warn">
+        <strong>原型階段：</strong>下面顯示的是「正式版會做什麼」。實際的 PDF / docx / 試算表寫入要等下一階段。
+      </div>
+      <div id="result-content"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeResultModal()">了解</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 產生進度 Modal ===== -->
+<div class="modal-backdrop hidden" id="modal-progress-backdrop">
+  <div class="modal" style="max-width: 480px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="progress-title">產生中</h3>
+    </div>
+    <div class="modal-body">
+      <div class="progress-modal">
+        <div class="progress-status" id="progress-status">準備開始...</div>
+        <div class="progress-detail" id="progress-detail">&nbsp;</div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="progress-pct"><span id="progress-pct">0</span>%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PDF 渲染用的隱藏容器 -->
+<div class="pdf-render-wrap" id="pdf-render-wrap"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===========================================
+   研習證明書產生系統 — 原型
+   v0.1 - UI only, no real PDF generation
+   =========================================== */
+
+// ========== 狀態管理 ==========
+const STORAGE_KEY = 'cert_system_v1';
+let state = {
+  employees: [],
+  selectedIds: new Set(),
+  courses: [],
+  settings: {
+    sheetUrl: '',
+    sheetViewUrl: '',
+    defaultOrg: '財團法人台南市私立天主教瑞復益智中心',
+    sealInstitution: null,
+    sealDirector: null
+  }
+};
+
+let editingEmployeeId = null;
+let generating = false;
+
+function uid() {
+  return 'e_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      state.employees = data.employees || [];
+      state.settings = { ...state.settings, ...(data.settings || {}) };
+    }
+  } catch (e) { console.warn('Load failed:', e); }
+}
+
+function saveState() {
+  const data = {
+    employees: state.employees,
+    settings: state.settings
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+// ========== 民國年轉換 ==========
+function toROCStr(y, m, d) {
+  if (!y || !m || !d) return '';
+  return `民國 ${y} 年 ${m} 月 ${d} 日`;
+}
+
+function toROCShort(y, m, d) {
+  if (!y || !m || !d) return '';
+  return `${y}.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')}`;
+}
+
+function toROCFileName(y, m, d) {
+  if (!y || !m || !d) return '';
+  return `${y}年${m}月${d}日`;
+}
+
+function todayROC() {
+  const t = new Date();
+  return {
+    y: t.getFullYear() - 1911,
+    m: t.getMonth() + 1,
+    d: t.getDate()
+  };
+}
+
+// ========== 分頁切換 ==========
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${name}`));
+  if (name === 'employees') renderEmployeeTable();
+  if (name === 'generate') {
+    renderSelector();
+    updateSummary();
+  }
+}
+
+// ========== 員工主檔 ==========
+function renderEmployeeTable() {
+  const search = (document.getElementById('search-employees').value || '').toLowerCase().trim();
+  const filtered = state.employees.filter(e =>
+    !search || e.name.toLowerCase().includes(search) || e.idNumber.toLowerCase().includes(search)
+  );
+  filtered.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
+
+  const tbody = document.getElementById('employee-tbody');
+  const empty = document.getElementById('employee-empty');
+  document.getElementById('emp-count').textContent = state.employees.length;
+
+  if (filtered.length === 0 && state.employees.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">沒有符合的員工</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(e => `
+    <tr>
+      <td><strong>${escapeHtml(e.name)}</strong></td>
+      <td style="color: var(--text-muted);">${escapeHtml(e.title || '—')}</td>
+      <td style="font-family: 'Courier New', monospace; font-size: 0.9rem;">${escapeHtml(e.idNumber)}</td>
+      <td>${toROCStr(e.birthY, e.birthM, e.birthD)}</td>
+      <td>
+        <div class="actions">
+          <button class="btn" onclick="openEmployeeModal('${e.id}')">編輯</button>
+          <button class="btn btn-danger" onclick="deleteEmployee('${e.id}')">刪除</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openEmployeeModal(id = null) {
+  editingEmployeeId = id;
+  const title = document.getElementById('modal-emp-title');
+  if (id) {
+    const e = state.employees.find(x => x.id === id);
+    if (!e) return;
+    title.textContent = '編輯員工';
+    document.getElementById('emp-name').value = e.name;
+    document.getElementById('emp-title').value = e.title || '';
+    document.getElementById('emp-id').value = e.idNumber;
+    document.getElementById('emp-birth-y').value = e.birthY || '';
+    document.getElementById('emp-birth-m').value = e.birthM || '';
+    document.getElementById('emp-birth-d').value = e.birthD || '';
+  } else {
+    title.textContent = '新增員工';
+    ['emp-name', 'emp-title', 'emp-id', 'emp-birth-y', 'emp-birth-m', 'emp-birth-d'].forEach(i => {
+      document.getElementById(i).value = '';
+    });
+  }
+  document.getElementById('modal-employee-backdrop').classList.remove('hidden');
+  setTimeout(() => document.getElementById('emp-name').focus(), 50);
+}
+
+function closeEmployeeModal() {
+  document.getElementById('modal-employee-backdrop').classList.add('hidden');
+  editingEmployeeId = null;
+}
+
+function saveEmployee() {
+  const name = document.getElementById('emp-name').value.trim();
+  const title = document.getElementById('emp-title').value.trim();
+  const idNumber = document.getElementById('emp-id').value.trim().toUpperCase();
+  const birthY = parseInt(document.getElementById('emp-birth-y').value);
+  const birthM = parseInt(document.getElementById('emp-birth-m').value);
+  const birthD = parseInt(document.getElementById('emp-birth-d').value);
+
+  if (!name) return toast('請輸入姓名', 'error');
+  if (!idNumber || idNumber.length !== 10) return toast('身分證字號需 10 碼', 'error');
+  if (!birthY || !birthM || !birthD) return toast('請輸入完整生日', 'error');
+
+  if (editingEmployeeId) {
+    if (state.employees.some(x => x.id !== editingEmployeeId && x.idNumber === idNumber)) {
+      return toast('此身分證字號已被其他員工使用', 'error');
+    }
+    const e = state.employees.find(x => x.id === editingEmployeeId);
+    Object.assign(e, { name, title, idNumber, birthY, birthM, birthD });
+    toast('已更新', 'success');
+  } else {
+    if (state.employees.some(e => e.idNumber === idNumber)) {
+      return toast('此身分證字號已存在', 'error');
+    }
+    state.employees.push({ id: uid(), name, title, idNumber, birthY, birthM, birthD });
+    toast('已新增', 'success');
+  }
+  saveState();
+  closeEmployeeModal();
+  renderEmployeeTable();
+}
+
+function deleteEmployee(id) {
+  const e = state.employees.find(x => x.id === id);
+  if (!e) return;
+  if (!confirm(`確定刪除「${e.name}」嗎？此操作無法復原。`)) return;
+  state.employees = state.employees.filter(x => x.id !== id);
+  state.selectedIds.delete(id);
+  saveState();
+  renderEmployeeTable();
+  toast('已刪除', 'success');
+}
+
+// ========== Excel 匯入匯出 ==========
+document.getElementById('import-excel').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  try {
+    const data = await file.arrayBuffer();
+    // cellDates: true → 日期型儲存格回傳為 Date 實例，避開 0.18.5 mini 把日期序號／"5/12/91" 解析錯亂的問題
+    const wb = XLSX.read(data, { cellDates: true });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet);
+
+    let added = 0, skipped = 0, converted = 0;
+    for (const row of rows) {
+      const title = String(row['職稱'] || row['title'] || '').trim();
+      const name = String(row['姓名'] || row['name'] || row['名字'] || '').trim();
+      const idNumber = String(
+        row['身分證字號'] || row['身分證'] || row['生份證字號'] || row['身份證字號'] || row['id'] || ''
+      ).trim().toUpperCase();
+      const birthRaw = row['生日'] || row['出生日期'] || row['birthday'] || row['出生年月日'] || '';
+
+      if (!name || !idNumber) { skipped++; continue; }
+      if (state.employees.some(e => e.idNumber === idNumber)) { skipped++; continue; }
+
+      // 解析生日：日期型儲存格走 Date 分支，字串走「抓三組數字」分支
+      let by, bm, bd;
+      if (birthRaw instanceof Date && !isNaN(birthRaw)) {
+        by = birthRaw.getFullYear();
+        bm = birthRaw.getMonth() + 1;
+        bd = birthRaw.getDate();
+      } else {
+        // 字串：支援 "114/05/20"、"114-5-20"、"114年5月20日"、"1991/5/12" 等格式
+        const parts = String(birthRaw).trim().match(/(\d+)/g);
+        if (!parts || parts.length < 3) { skipped++; continue; }
+        [by, bm, bd] = parts.map(Number);
+      }
+      // 自動偵測：年份 > 200 視為西元，轉換成民國
+      if (by > 200) {
+        by = by - 1911;
+        converted++;
+      }
+
+      state.employees.push({
+        id: uid(),
+        name, title, idNumber,
+        birthY: by, birthM: bm, birthD: bd
+      });
+      added++;
+    }
+    saveState();
+    renderEmployeeTable();
+    let msg = `已匯入 ${added} 筆，跳過 ${skipped} 筆`;
+    if (converted > 0) msg += `（其中 ${converted} 筆生日由西元自動換算成民國）`;
+    toast(msg, 'success');
+  } catch (e) {
+    console.error(e);
+    toast('匯入失敗，請檢查檔案格式', 'error');
+  }
+  ev.target.value = '';
+});
+
+function exportEmployeesExcel() {
+  if (state.employees.length === 0) return toast('沒有員工可匯出', 'error');
+  const rows = state.employees.map(e => ({
+    '姓名': e.name,
+    '職稱': e.title || '',
+    '身分證字號': e.idNumber,
+    '生日': `${e.birthY}/${String(e.birthM).padStart(2,'0')}/${String(e.birthD).padStart(2,'0')}`
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '員工主檔');
+  const today = todayROC();
+  XLSX.writeFile(wb, `員工主檔_${today.y}年${today.m}月${today.d}日.xlsx`);
+  toast('已匯出', 'success');
+}
+
+// ========== 選人器 ==========
+function renderSelector() {
+  const search = (document.getElementById('search-selector').value || '').toLowerCase().trim();
+  const filtered = state.employees
+    .filter(e => !search || e.name.toLowerCase().includes(search) || e.idNumber.toLowerCase().includes(search))
+    .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
+
+  const list = document.getElementById('selector-list');
+  const total = document.getElementById('selector-total');
+  total.textContent = `共 ${state.employees.length} 位員工` + (search ? `，符合 ${filtered.length} 位` : '');
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-state-hint">${state.employees.length === 0 ? '請先到「員工主檔」新增員工' : '沒有符合的員工'}</div>
+    </div>`;
+  } else {
+    list.innerHTML = filtered.map(e => {
+      const checked = state.selectedIds.has(e.id);
+      const titleStr = e.title ? `${escapeHtml(e.title)}` : '';
+      return `
+        <label class="selector-item ${checked ? 'selected' : ''}">
+          <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleSelect('${e.id}', this.checked)">
+          <div class="selector-item-info">
+            <div class="selector-item-name">${escapeHtml(e.name)}${titleStr ? ` <span style="color: var(--text-muted); font-weight: 400; font-size: 0.85rem;">・ ${titleStr}</span>` : ''}</div>
+            <div class="selector-item-meta">${escapeHtml(e.idNumber)} ・ 生日 ${toROCShort(e.birthY, e.birthM, e.birthD)}</div>
+          </div>
+        </label>
+      `;
+    }).join('');
+  }
+  updateSummary();
+}
+
+function toggleSelect(id, checked) {
+  if (checked) state.selectedIds.add(id);
+  else state.selectedIds.delete(id);
+  renderSelector();
+}
+
+function selectAllVisible(select) {
+  const search = (document.getElementById('search-selector').value || '').toLowerCase().trim();
+  const visible = state.employees.filter(e =>
+    !search || e.name.toLowerCase().includes(search) || e.idNumber.toLowerCase().includes(search)
+  );
+  visible.forEach(e => {
+    if (select) state.selectedIds.add(e.id);
+    else state.selectedIds.delete(e.id);
+  });
+  renderSelector();
+}
+
+function updateSummary() {
+  const n = state.selectedIds.size;
+  const validCourseCount = state.courses.filter(c => c.name && c.instructor && c.hours).length;
+  document.getElementById('selected-count').textContent = n;
+  document.getElementById('summary-count').textContent = n;
+  document.getElementById('summary-count2').textContent = n;
+  const sc = document.getElementById('summary-courses');
+  if (sc) sc.textContent = validCourseCount;
+}
+
+// ========== 文號 ==========
+document.getElementById('t-docnum').addEventListener('input', (e) => {
+  document.getElementById('docnum-preview').textContent = e.target.value || 'XXX';
+});
+
+// ========== 課程 ==========
+function addCourse(name = '', instructor = '', hours = '') {
+  state.courses.push({ id: uid(), name, instructor, hours });
+  renderCourses();
+}
+
+function removeCourse(id) {
+  state.courses = state.courses.filter(c => c.id !== id);
+  renderCourses();
+}
+
+function updateCourse(id, field, value) {
+  const c = state.courses.find(x => x.id === id);
+  if (c) c[field] = value;
+  recalcTotal();
+}
+
+function renderCourses() {
+  const tbody = document.getElementById('courses-tbody');
+  if (state.courses.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">尚無課程，請按下方「＋ 新增課程」</td></tr>`;
+  } else {
+    tbody.innerHTML = state.courses.map(c => `
+      <tr>
+        <td><input type="text" value="${escapeAttr(c.name)}" placeholder="課程名稱" oninput="updateCourse('${c.id}', 'name', this.value)"></td>
+        <td><input type="text" value="${escapeAttr(c.instructor)}" placeholder="講師" oninput="updateCourse('${c.id}', 'instructor', this.value)"></td>
+        <td><input type="number" value="${escapeAttr(c.hours)}" placeholder="時數" min="0" step="0.5" oninput="updateCourse('${c.id}', 'hours', this.value)"></td>
+        <td class="col-actions">
+          <button class="btn-remove" onclick="removeCourse('${c.id}')" title="刪除這列">×</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+  recalcTotal();
+}
+
+function recalcTotal() {
+  const total = state.courses.reduce((s, c) => s + (parseFloat(c.hours) || 0), 0);
+  document.getElementById('total-hours').textContent = total % 1 === 0 ? total : total.toFixed(1);
+  updateSummary();
+}
+
+// ========== 字型偵測 ==========
+function isFontAvailable(fontName) {
+  // 用「字串寬度差異」偵測字型是否存在
+  const testStr = '研習證明書員工林雅婷ABCDEFG';
+  const baseFonts = ['monospace', 'sans-serif', 'serif'];
+  const testSize = '72px';
+
+  const span = document.createElement('span');
+  span.style.cssText = `position:absolute; left:-9999px; top:-9999px; font-size:${testSize}; visibility:hidden; white-space:nowrap;`;
+  span.textContent = testStr;
+  document.body.appendChild(span);
+
+  try {
+    // 量測每個 base 字型的寬度
+    const baseWidths = {};
+    for (const base of baseFonts) {
+      span.style.fontFamily = base;
+      baseWidths[base] = span.offsetWidth;
+    }
+    // 換成「目標字型, base」，如果寬度跟純 base 一樣，代表目標字型沒被使用
+    for (const base of baseFonts) {
+      span.style.fontFamily = `"${fontName}", ${base}`;
+      if (span.offsetWidth !== baseWidths[base]) {
+        return true;  // 用了目標字型
+      }
+    }
+    return false;
+  } finally {
+    document.body.removeChild(span);
+  }
+}
+
+function detectFonts() {
+  const candidates = [
+    { name: 'DFKai-SB', label: 'DFKai-SB（Windows 標楷體）' },
+    { name: '標楷體', label: '標楷體' },
+    { name: 'BiauKai', label: 'BiauKai（macOS 標楷體）' },
+    { name: 'Kaiti TC', label: 'Kaiti TC' }
+  ];
+  const found = candidates.filter(c => isFontAvailable(c.name));
+  return { found, available: found.length > 0 };
+}
+
+function renderFontDetection() {
+  const el = document.getElementById('font-detection-result');
+  if (!el) return;
+  const result = detectFonts();
+  if (result.available) {
+    el.innerHTML = `
+      <div style="color: var(--success); font-weight: 600;">✓ 已偵測到楷書字型，可正常輸出</div>
+      <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.4rem;">
+        系統可用：${result.found.map(f => f.label).join('、')}
+      </div>
+    `;
+  } else {
+    el.innerHTML = `
+      <div style="color: var(--error); font-weight: 600;">✗ 找不到楷書字型</div>
+      <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.4rem;">
+        系統上沒有偵測到「標楷體」「DFKai-SB」「BiauKai」等楷書字型。<br>
+        Windows 預設應該有「標楷體」，請檢查系統設定。<br>
+        產出的證書會 fallback 到細明體或其他襯線字型。
+      </div>
+    `;
+  }
+}
+
+// ========== 預設 Apps Script 程式碼 ==========
+const APPS_SCRIPT_CODE = `function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+
+    // 第一次寫入時自動建立標題列
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow([
+        '訓練日期', '文號', '姓名', '身分證字號',
+        '課程清單', '總時數', '發行時間'
+      ]);
+    }
+
+    for (const row of data.rows) {
+      sheet.appendRow([
+        row['訓練日期'], row['文號'], row['姓名'], row['身分證'],
+        row['課程清單'], row['總時數'], row['發行時間']
+      ]);
+    }
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ success: true, added: data.rows.length }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ success: false, error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet() {
+  return ContentService.createTextOutput('Cert system endpoint OK')
+    .setMimeType(ContentService.MimeType.TEXT);
+}`;
+
+function copyAppsScriptCode() {
+  navigator.clipboard.writeText(APPS_SCRIPT_CODE).then(() => {
+    toast('程式碼已複製到剪貼簿', 'success');
+  }).catch(() => {
+    toast('複製失敗，請手動選取', 'error');
+  });
+}
+
+// ========== 印章上傳 ==========
+function handleSealUpload(type, file) {
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    toast('圖檔太大，請小於 2MB', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const key = type === 'inst' ? 'sealInstitution' : 'sealDirector';
+    state.settings[key] = e.target.result;
+    saveState();
+    renderSealPreviews();
+    toast(`${type === 'inst' ? '機構用印' : '主任簽名章'}已儲存`, 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderSealPreviews() {
+  const instPrev = document.getElementById('seal-inst-preview');
+  const dirPrev = document.getElementById('seal-dir-preview');
+  if (instPrev) {
+    instPrev.innerHTML = state.settings.sealInstitution
+      ? `<div class="seal-preview-wrap"><img src="${state.settings.sealInstitution}"></div>`
+      : '';
+  }
+  if (dirPrev) {
+    dirPrev.innerHTML = state.settings.sealDirector
+      ? `<div class="seal-preview-wrap"><img src="${state.settings.sealDirector}"></div>`
+      : '';
+  }
+}
+
+// ========== 進度條 ==========
+function showProgress(title, status, pct) {
+  document.getElementById('progress-title').textContent = title;
+  updateProgress(title, status, pct);
+  document.getElementById('modal-progress-backdrop').classList.remove('hidden');
+}
+
+function updateProgress(title, detail, pct) {
+  if (title) document.getElementById('progress-status').textContent = title;
+  document.getElementById('progress-detail').textContent = detail || '';
+  const p = Math.max(0, Math.min(100, Math.round(pct)));
+  document.getElementById('progress-bar').style.width = p + '%';
+  document.getElementById('progress-pct').textContent = p;
+}
+
+function hideProgress() {
+  document.getElementById('modal-progress-backdrop').classList.add('hidden');
+}
+
+// ========== PDF 證書 HTML 建構 ==========
+function buildCertHtmlForPdf(emp, t, courses, totalHours) {
+  const instSeal = state.settings.sealInstitution;
+  const dirSeal = state.settings.sealDirector;
+
+  const instSealHtml = instSeal
+    ? `<img src="${instSeal}" class="seal-img-inst" alt="">`
+    : `<div class="seal-placeholder">機構<br>用印</div>`;
+  const dirSealHtml = dirSeal
+    ? `<img src="${dirSeal}" class="seal-img-dir" alt="">`
+    : `<div class="signature-placeholder">主任簽名章</div>`;
+
+  return `
+    <div class="pdf-cert">
+      <div class="cert-title">研習證明書</div>
+      <div class="cert-meta">
+        <div>臺南市政府社會局 ${t.issueDate.y} 年 ${t.issueDate.m} 月 ${t.issueDate.d} 日</div>
+        <div>南市社身字第 ${escapeHtml(t.docNum)} 號</div>
+      </div>
+      <div class="cert-person">
+        ${escapeHtml(emp.name)} 君（身分證字號 ${escapeHtml(emp.idNumber)}）（生日 ${emp.birthY} 年 ${emp.birthM} 月 ${emp.birthD} 日）
+      </div>
+      <div class="cert-body">
+        參加 ${escapeHtml(t.org)} 於中華民國 ${t.trainDate.y} 年 ${t.trainDate.m} 月 ${t.trainDate.d} 日辦理之研習訓練課程共計 ${totalHours} 小時，訓練結業。
+      </div>
+      <div class="cert-attest">特此證明</div>
+      <table>
+        <thead>
+          <tr><th>課程名稱</th><th>講師</th><th>時數</th></tr>
+        </thead>
+        <tbody>
+          ${courses.map(c => `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.instructor)} 講師</td><td>${c.hours} 小時</td></tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="cert-signature">
+        <div class="cert-org-line">
+          ${instSealHtml}
+          <div>${escapeHtml(t.org)}</div>
+        </div>
+        <div class="cert-director-line">
+          <div class="director-label">主任</div>
+          ${dirSealHtml}
+        </div>
+      </div>
+      <div class="cert-date-bottom">
+        中華民國 ${t.signDate.y} 年 ${t.signDate.m} 月 ${t.signDate.d} 日
+      </div>
+    </div>
+  `;
+}
+
+// ========== 產生單一 PDF ==========
+async function generatePdfBlob(emp, t, courses, totalHours) {
+  if (typeof html2canvas === 'undefined') throw new Error('html2canvas 函式庫未載入');
+  if (!window.jspdf || !window.jspdf.jsPDF) throw new Error('jsPDF 函式庫未載入');
+
+  const wrap = document.getElementById('pdf-render-wrap');
+  wrap.innerHTML = buildCertHtmlForPdf(emp, t, courses, totalHours);
+  const element = wrap.firstElementChild;
+
+  // 等字型載入完成（標楷體 fallback 等）
+  if (document.fonts && document.fonts.ready) {
+    try { await document.fonts.ready; } catch (e) { /* ignore */ }
+  }
+
+  // 等一個 animation frame 確保 layout 完成
+  await new Promise(r => requestAnimationFrame(() => r()));
+  await new Promise(r => setTimeout(r, 80));
+
+  // 量元素實際渲染後的尺寸，多加幾個像素緩衝避免邊緣裁切
+  const rect = element.getBoundingClientRect();
+  const elemWidth = Math.ceil(rect.width);
+  const elemHeight = Math.ceil(rect.height) + 4;
+
+  // 用 html2canvas 拍照
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    backgroundColor: '#ffffff',
+    width: elemWidth,
+    height: elemHeight,
+    windowWidth: elemWidth,
+    windowHeight: elemHeight,
+    scrollX: 0,
+    scrollY: 0
+  });
+
+  // 用 jsPDF 產 A4 PDF
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+  const pdfWidth = pdf.internal.pageSize.getWidth();   // 210
+  const pdfHeight = pdf.internal.pageSize.getHeight(); // 297
+
+  // 寬度填滿，高度按比例
+  const imgWidth = pdfWidth;
+  const imgHeight = pdfWidth * (canvas.height / canvas.width);
+
+  let drawWidth = imgWidth;
+  let drawHeight = imgHeight;
+  let drawX = 0;
+  let drawY = 0;
+
+  // 如果圖太高，縮小以塞進單頁
+  if (imgHeight > pdfHeight) {
+    drawHeight = pdfHeight;
+    drawWidth = pdfHeight * (canvas.width / canvas.height);
+    drawX = (pdfWidth - drawWidth) / 2;
+  }
+
+  const imgData = canvas.toDataURL('image/jpeg', 0.96);
+  pdf.addImage(imgData, 'JPEG', drawX, drawY, drawWidth, drawHeight);
+
+  wrap.innerHTML = '';
+  return pdf.output('blob');
+}
+
+// ========== 產生登錄表 DOCX（單堂課程一份）==========
+async function generateRegistrationDocx(employees, t, course) {
+  const D = window.docx;
+  if (!D) throw new Error('docx 函式庫未載入');
+
+  const {
+    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+    AlignmentType, WidthType, BorderStyle, VerticalAlign,
+    ShadingType, PageOrientation
+  } = D;
+
+  const trainDateStr = `民國 ${t.trainDate.y} 年 ${t.trainDate.m} 月 ${t.trainDate.d} 日`;
+  const issueDateStr = `民國 ${t.issueDate.y} 年 ${t.issueDate.m} 月 ${t.issueDate.d} 日`;
+  const docNumStr = `南市社身字第 ${t.docNum} 號`;
+
+  const border = { style: BorderStyle.SINGLE, size: 6, color: '000000' };
+  const borders = { top: border, bottom: border, left: border, right: border };
+  const cellMargins = { top: 100, bottom: 100, left: 100, right: 100 };
+
+  // 欄位寬度（單位 DXA，總和 = A4 橫向內容寬度）
+  const colWidths = [1200, 1600, 1800, 3000, 2800, 1300, 2700, 1000];
+  const totalWidth = colWidths.reduce((s, w) => s + w, 0);
+
+  // 工具：建立儲存格
+  const makeCell = (content, width, isHeader = false) => {
+    const lines = Array.isArray(content) ? content : [content];
+    const paras = lines.map(line => new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({
+        text: String(line || ''),
+        size: isHeader ? 20 : 18,
+        bold: isHeader,
+        font: '標楷體'
+      })]
+    }));
+    return new TableCell({
+      borders,
+      width: { size: width, type: WidthType.DXA },
+      margins: cellMargins,
+      verticalAlign: VerticalAlign.CENTER,
+      shading: isHeader ? { fill: 'E8EFEB', type: ShadingType.CLEAR } : undefined,
+      children: paras
+    });
+  };
+
+  // 標題段落
+  const titlePara = new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 200, after: 400 },
+    children: [new TextRun({
+      text: '身心障礙者服務人員在職訓練登錄表',
+      bold: true,
+      size: 32,
+      font: '標楷體'
+    })]
+  });
+
+  // 表頭
+  const headers = ['姓名', '身分證字號', '在職訓練日期', '在職訓練課程名稱',
+                   '在職訓練辦理單位', '在職訓練合格時數',
+                   '各級主管機關同意備查日期及文號', '備註'];
+  const headerRow = new TableRow({
+    tableHeader: true,
+    children: headers.map((h, i) => makeCell(h, colWidths[i], true))
+  });
+
+  // 員工列（每位員工一列，全部對應到同一堂課程）
+  const employeeRows = employees.map(emp => new TableRow({
+    children: [
+      makeCell(emp.name, colWidths[0]),
+      makeCell(emp.idNumber, colWidths[1]),
+      makeCell(trainDateStr, colWidths[2]),
+      makeCell(course.name, colWidths[3]),
+      makeCell(t.org, colWidths[4]),
+      makeCell(`${course.hours} 小時`, colWidths[5]),
+      makeCell([issueDateStr, docNumStr], colWidths[6]),
+      makeCell('', colWidths[7])
+    ]
+  }));
+
+  const table = new Table({
+    width: { size: totalWidth, type: WidthType.DXA },
+    columnWidths: colWidths,
+    rows: [headerRow, ...employeeRows]
+  });
+
+  const doc = new Document({
+    styles: {
+      default: {
+        document: { run: { font: '標楷體', size: 20 } }
+      }
+    },
+    sections: [{
+      properties: {
+        page: {
+          size: {
+            width: 11906,   // A4 短邊
+            height: 16838,  // A4 長邊
+            orientation: PageOrientation.LANDSCAPE
+          },
+          margin: { top: 720, right: 720, bottom: 720, left: 720 }
+        }
+      },
+      children: [titlePara, table]
+    }]
+  });
+
+  return await Packer.toBlob(doc);
+}
+
+// 把課名清理成合法檔名
+function sanitizeFilename(name) {
+  return String(name).replace(/[\/\\:*?"<>|]/g, '_').trim();
+}
+
+// ========== 寫入 Google 試算表 ==========
+async function sendToGoogleSheet(rows) {
+  const url = state.settings.sheetUrl;
+  if (!url) return { skipped: true };
+
+  try {
+    // 不設 Content-Type 以避免 CORS preflight 失敗
+    const response = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify({ rows })
+    });
+    if (!response.ok) {
+      return { success: false, error: `HTTP ${response.status}` };
+    }
+    return await response.json();
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+async function testSheetWrite() {
+  const url = state.settings.sheetUrl;
+  if (!url) return toast('請先填寫 Apps Script Web App 網址', 'error');
+
+  showProgress('測試寫入', '正在嘗試送出測試資料...', 30);
+  const testRow = {
+    '訓練日期': '測試',
+    '文號': '測試文號',
+    '姓名': '測試人',
+    '身分證': 'X000000000',
+    '課程清單': '測試課程',
+    '總時數': 0,
+    '發行時間': new Date().toLocaleString('zh-TW')
+  };
+  const result = await sendToGoogleSheet([testRow]);
+  hideProgress();
+
+  if (result.success) {
+    toast('測試成功！請去試算表確認是否多了一列「測試」資料', 'success');
+  } else if (result.skipped) {
+    toast('未設定網址', 'error');
+  } else {
+    toast(`測試失敗：${result.error || '未知錯誤'}`, 'error');
+  }
+}
+
+// ========== 下載 Blob ==========
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ========== 預覽 / 產生 ==========
+function getTrainingData() {
+  return {
+    docNum: document.getElementById('t-docnum').value.trim(),
+    org: document.getElementById('t-org').value.trim(),
+    issueDate: {
+      y: parseInt(document.getElementById('t-issuedate-y').value) || 0,
+      m: parseInt(document.getElementById('t-issuedate-m').value) || 0,
+      d: parseInt(document.getElementById('t-issuedate-d').value) || 0
+    },
+    trainDate: {
+      y: parseInt(document.getElementById('t-traindate-y').value) || 0,
+      m: parseInt(document.getElementById('t-traindate-m').value) || 0,
+      d: parseInt(document.getElementById('t-traindate-d').value) || 0
+    },
+    signDate: {
+      y: parseInt(document.getElementById('t-signdate-y').value) || 0,
+      m: parseInt(document.getElementById('t-signdate-m').value) || 0,
+      d: parseInt(document.getElementById('t-signdate-d').value) || 0
+    }
+  };
+}
+
+function validateForGenerate() {
+  if (state.selectedIds.size === 0) return '請至少選擇一位員工';
+  const t = getTrainingData();
+  if (!t.docNum) return '請輸入文號';
+  if (!t.issueDate.y || !t.issueDate.m || !t.issueDate.d) return '請輸入完整的「社會局核發日期」';
+  if (!t.trainDate.y || !t.trainDate.m || !t.trainDate.d) return '請輸入完整的「訓練辦理日期」';
+  if (!t.signDate.y || !t.signDate.m || !t.signDate.d) return '請輸入完整的「證書簽發日期」';
+  if (state.courses.length === 0) return '請至少新增一筆課程';
+  const validCourses = state.courses.filter(c => c.name && c.instructor && c.hours);
+  if (validCourses.length === 0) return '請完整填寫至少一筆課程（課名、講師、時數）';
+  return null;
+}
+
+function previewCertificate() {
+  const err = validateForGenerate();
+  if (err) return toast(err, 'error');
+
+  const firstId = [...state.selectedIds][0];
+  const emp = state.employees.find(e => e.id === firstId);
+  if (!emp) return toast('找不到員工', 'error');
+
+  const t = getTrainingData();
+  const validCourses = state.courses.filter(c => c.name && c.instructor && c.hours);
+  const totalHours = validCourses.reduce((s, c) => s + (parseFloat(c.hours) || 0), 0);
+
+  const html = `
+    <div class="cert-preview">
+      <div class="cert-title">研習證明書</div>
+      <div class="cert-meta">
+        <div class="cert-meta-line">臺南市政府社會局 ${t.issueDate.y} 年 ${t.issueDate.m} 月 ${t.issueDate.d} 日</div>
+        <div class="cert-meta-line cert-meta-doc">南市社身字第 ${escapeHtml(t.docNum)} 號</div>
+      </div>
+      <div class="cert-person">
+        ${escapeHtml(emp.name)} 君（身分證字號 ${escapeHtml(emp.idNumber)}）（生日 ${emp.birthY} 年 ${emp.birthM} 月 ${emp.birthD} 日）
+      </div>
+      <div class="cert-body">
+        參加 ${escapeHtml(t.org)} 於中華民國 ${t.trainDate.y} 年 ${t.trainDate.m} 月 ${t.trainDate.d} 日辦理之研習訓練課程共計 ${totalHours} 小時，訓練結業。
+      </div>
+      <div class="cert-attest">特此證明</div>
+      <table>
+        <thead>
+          <tr><th>課程名稱</th><th>講師</th><th>時數</th></tr>
+        </thead>
+        <tbody>
+          ${validCourses.map(c => `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.instructor)} 講師</td><td>${c.hours} 小時</td></tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="cert-signature">
+        <div class="cert-org-line">
+          <div class="seal-placeholder">機構<br>用印</div>
+          <div>${escapeHtml(t.org)}</div>
+        </div>
+        <div class="cert-director-line">
+          <div class="director-label">主任</div>
+          <div class="signature-placeholder">主任簽名章</div>
+        </div>
+      </div>
+      <div class="cert-date-bottom">
+        中華民國 ${t.signDate.y} 年 ${t.signDate.m} 月 ${t.signDate.d} 日
+      </div>
+    </div>
+  `;
+  document.getElementById('cert-preview-content').innerHTML = html;
+  document.getElementById('modal-preview-backdrop').classList.remove('hidden');
+}
+
+function closePreviewModal() {
+  document.getElementById('modal-preview-backdrop').classList.add('hidden');
+}
+
+async function generateAll() {
+  if (generating) return toast('已在產生中，請等待完成', 'error');
+
+  const err = validateForGenerate();
+  if (err) return toast(err, 'error');
+
+  // 提示如果沒上傳印章
+  if (!state.settings.sealInstitution || !state.settings.sealDirector) {
+    if (!confirm('尚未上傳印章圖檔，產出的 PDF 會顯示「印章位置」虛線框。確定要繼續嗎？')) return;
+  }
+
+  const t = getTrainingData();
+  const selected = [...state.selectedIds].map(id => state.employees.find(e => e.id === id)).filter(Boolean);
+  const validCourses = state.courses.filter(c => c.name && c.instructor && c.hours);
+  const totalHours = validCourses.reduce((s, c) => s + (parseFloat(c.hours) || 0), 0);
+  const dateForFile = toROCFileName(t.trainDate.y, t.trainDate.m, t.trainDate.d);
+
+  generating = true;
+  showProgress('產生中', '準備開始...', 0);
+
+  try {
+    const zip = new JSZip();
+    const certFolder = zip.folder('證書');
+    const totalSteps = selected.length + validCourses.length + 1; // PDFs + 每課一份 docx + zip
+    let step = 0;
+
+    // 1. 每張 PDF
+    for (let i = 0; i < selected.length; i++) {
+      const emp = selected[i];
+      updateProgress('正在產生證書', `${emp.name}（${i+1}/${selected.length}）`, (step / totalSteps) * 100);
+      const pdfBlob = await generatePdfBlob(emp, t, validCourses, totalHours);
+      certFolder.file(`${sanitizeFilename(emp.name)}_${dateForFile}_研習證明.pdf`, pdfBlob);
+      step++;
+    }
+
+    // 2. 登錄表 docx：每堂課一份
+    const docxFolder = zip.folder('登錄表');
+    for (let i = 0; i < validCourses.length; i++) {
+      const course = validCourses[i];
+      updateProgress('正在產生登錄表', `${course.name}（${i+1}/${validCourses.length}）`, (step / totalSteps) * 100);
+      const docxBlob = await generateRegistrationDocx(selected, t, course);
+      const safeName = sanitizeFilename(course.name);
+      docxFolder.file(`在職訓練登錄表_${dateForFile}_${safeName}.docx`, docxBlob);
+      step++;
+    }
+
+    // 3. 打包 ZIP
+    updateProgress('正在打包檔案', 'ZIP 壓縮中...', (step / totalSteps) * 100);
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    downloadBlob(zipBlob, `研習證明書_${dateForFile}.zip`);
+    step++;
+
+    // 4. 寫入 Google 試算表
+    let sheetResult = null;
+    if (state.settings.sheetUrl) {
+      updateProgress('正在寫入 Google 試算表', '紀錄上傳中...', 98);
+      const sheetRows = selected.map(emp => ({
+        '訓練日期': toROCShort(t.trainDate.y, t.trainDate.m, t.trainDate.d),
+        '文號': `南市社身字第 ${t.docNum} 號`,
+        '姓名': emp.name,
+        '身分證': emp.idNumber,
+        '課程清單': validCourses.map(c => c.name).join('、'),
+        '總時數': totalHours,
+        '發行時間': new Date().toLocaleString('zh-TW')
+      }));
+      sheetResult = await sendToGoogleSheet(sheetRows);
+    }
+
+    updateProgress('完成', '已下載 ZIP 檔', 100);
+    await new Promise(r => setTimeout(r, 500));
+    hideProgress();
+
+    let msg = `已產出 ${selected.length} 張證書 + ${validCourses.length} 份登錄表`;
+    if (sheetResult && sheetResult.success) {
+      msg += `，並寫入試算表 ${sheetResult.added} 筆`;
+    } else if (sheetResult && sheetResult.success === false) {
+      msg += `（試算表寫入失敗：${sheetResult.error}）`;
+    }
+    toast(msg, sheetResult && sheetResult.success === false ? 'error' : 'success');
+
+  } catch (e) {
+    console.error(e);
+    hideProgress();
+    toast('產生失敗：' + e.message, 'error');
+  } finally {
+    generating = false;
+  }
+}
+
+function closeResultModal() {
+  document.getElementById('modal-result-backdrop').classList.add('hidden');
+}
+
+// ========== 歷史 ==========
+function openHistorySheet() {
+  if (state.settings.sheetViewUrl) {
+    window.open(state.settings.sheetViewUrl, '_blank');
+  } else {
+    toast('請先到「設定」分頁填寫試算表瀏覽網址', 'error');
+    switchTab('settings');
+  }
+}
+
+// ========== 設定 ==========
+document.getElementById('setting-sheet-url').addEventListener('input', (e) => {
+  state.settings.sheetUrl = e.target.value.trim();
+  saveState();
+});
+document.getElementById('setting-sheet-view-url').addEventListener('input', (e) => {
+  state.settings.sheetViewUrl = e.target.value.trim();
+  saveState();
+});
+
+function clearAllData() {
+  if (!confirm('將清除所有員工資料、印章與設定，且無法復原。確定要繼續嗎？')) return;
+  if (!confirm('再次確認：真的要清除嗎？建議先匯出 Excel 備份。')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  state.employees = [];
+  state.selectedIds.clear();
+  state.settings = {
+    sheetUrl: '', sheetViewUrl: '',
+    defaultOrg: '財團法人台南市私立天主教瑞復益智中心',
+    sealInstitution: null, sealDirector: null
+  };
+  document.getElementById('setting-sheet-url').value = '';
+  document.getElementById('setting-sheet-view-url').value = '';
+  document.getElementById('seal-inst-file').value = '';
+  document.getElementById('seal-dir-file').value = '';
+  renderSealPreviews();
+  renderEmployeeTable();
+  toast('已清除', 'success');
+}
+
+// ========== Toast ==========
+let toastTimer = null;
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// ========== 安全 ==========
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s) {
+  return escapeHtml(s);
+}
+
+// ========== 初始化 ==========
+function init() {
+  loadState();
+
+  // 設定預設今日為簽發日期
+  const t = todayROC();
+  document.getElementById('t-signdate-y').value = t.y;
+  document.getElementById('t-signdate-m').value = t.m;
+  document.getElementById('t-signdate-d').value = t.d;
+
+  // 載入設定
+  document.getElementById('setting-sheet-url').value = state.settings.sheetUrl || '';
+  document.getElementById('setting-sheet-view-url').value = state.settings.sheetViewUrl || '';
+
+  // 顯示 Apps Script 程式碼
+  const codeEl = document.getElementById('apps-script-code');
+  if (codeEl) codeEl.textContent = APPS_SCRIPT_CODE;
+
+  // 印章上傳事件
+  document.getElementById('seal-inst-file').addEventListener('change', (e) => {
+    if (e.target.files[0]) handleSealUpload('inst', e.target.files[0]);
+  });
+  document.getElementById('seal-dir-file').addEventListener('change', (e) => {
+    if (e.target.files[0]) handleSealUpload('dir', e.target.files[0]);
+  });
+  renderSealPreviews();
+
+  // 字型偵測（延後一點讓字型先載入）
+  setTimeout(() => {
+    renderFontDetection();
+    const result = detectFonts();
+    if (!result.available) {
+      toast('警告：系統未偵測到標楷體，輸出字型可能不正確', 'error');
+    }
+  }, 500);
+
+  // 預設兩列課程
+  addCourse();
+  addCourse();
+
+  renderEmployeeTable();
+}
+
+init();
+</script>
+</body>
+</html>

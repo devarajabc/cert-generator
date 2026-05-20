@@ -1,0 +1,26 @@
+{
+  "name": "cert-generator",
+  "version": "0.4.2",
+  "description": "研習證明書批次產生系統 — 給社福機構社工使用的零安裝瀏覽器工具",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.js",
+    "dev": "echo '用瀏覽器打開 src/index.html 即可'"
+  },
+  "devDependencies": {
+    "docx": "7.8.2",
+    "html2canvas": "1.4.1",
+    "jspdf": "2.5.1",
+    "jszip": "3.10.1",
+    "xlsx": "0.18.5"
+  },
+  "license": "MIT",
+  "keywords": [
+    "certificate",
+    "taiwan",
+    "social-services",
+    "training",
+    "pdf-generator",
+    "browser-only"
+  ]
+}
