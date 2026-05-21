@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A batch generator for Taiwanese social-service training certificates (研習證明書), written as a **single self-contained HTML file** intended to be opened directly in a browser by social workers — no server, no install, no network required (except optional Google Sheets logging). Designed for 財團法人台南市私立天主教瑞復益智中心; forkable for other organizations. UI strings and templates are all Traditional Chinese.
+A batch generator for Taiwanese social-service training certificates (研習證明書), written as a **single self-contained HTML file** intended to be opened directly in a browser by social workers — no server, no install, no network required (except optional Google Sheets logging). Designed for Taiwanese social-service organizations; forkable for any organization. UI strings and templates are all Traditional Chinese.
 
 ## Commands
 
@@ -46,7 +46,7 @@ If you change the CDN tags in `src/index.html` (URLs, order, or count), update `
 
 These are the search-and-replace anchors in `src/index.html` — keep them grep-able if you edit nearby code:
 
-1. Org name: `財團法人台南市私立天主教瑞復益智中心`
+1. Org name: now user-input via the 「辦理單位」 field in the 產生 tab (no longer hardcoded; default state has `defaultOrg: ''`)
 2. Document number prefix: `南市社身字第`
 3. Top header: `臺南市政府社會局`
 4. Registration form title: `身心障礙者服務人員在職訓練登錄表`

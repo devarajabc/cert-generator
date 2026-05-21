@@ -1496,7 +1496,6 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   <div class="header-inner">
     <div class="title-row">
       <h1>研習證明書產生系統<span class="accent">v0.5.0</span></h1>
-      <div class="subtitle">財團法人台南市私立天主教瑞復益智中心</div>
       <div class="motto">
         &ldquo;Amen, I say to you, whatever you did for one of these least brothers of mine, you did for me.&rdquo;
         &nbsp;<cite>— Matthew 25:40</cite>
@@ -1605,7 +1604,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         </div>
         <div class="field">
           <label class="label">辦理單位</label>
-          <input type="text" class="input" id="t-org" value="財團法人台南市私立天主教瑞復益智中心">
+          <input type="text" class="input" id="t-org" value="" placeholder="請輸入辦理單位完整名稱">
         </div>
       </div>
 
@@ -1916,7 +1915,7 @@ let state = {
   settings: {
     sheetUrl: '',
     sheetViewUrl: '',
-    defaultOrg: '財團法人台南市私立天主教瑞復益智中心',
+    defaultOrg: '',
     sealInstitution: null,
     sealDirector: null
   }
@@ -2996,7 +2995,7 @@ function clearAllData() {
   state.selectedIds.clear();
   state.settings = {
     sheetUrl: '', sheetViewUrl: '',
-    defaultOrg: '財團法人台南市私立天主教瑞復益智中心',
+    defaultOrg: '',
     sealInstitution: null, sealDirector: null
   };
   document.getElementById('setting-sheet-url').value = '';
