@@ -32,6 +32,12 @@
 
 ## 快速開始
 
+### 想先試玩看看？
+
+👉 **[線上試玩版](https://devarajabc.github.io/cert-generator/)** — 不用下載，瀏覽器直接打開試用。
+
+⚠️ 線上版資料只存在你的瀏覽器（localStorage），但**正式使用建議下載桌面版**：完全離線、不需網路、跟社工平常使用情境一致。
+
 ### 給社工（最終使用者）
 
 直接下載 [dist/cert-generator.html](dist/cert-generator.html)，雙擊用瀏覽器打開即可。
