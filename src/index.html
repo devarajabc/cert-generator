@@ -1654,8 +1654,14 @@ document.getElementById('import-excel').addEventListener('change', async (ev) =>
     const reasons = { noName: 0, noId: 0, duplicate: 0, badBirth: 0 };
 
     for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
+      const rawRow = rows[i];
       const excelRow = i + 2;  // +2：i 從 0 起算 + 跳過標題列
+      // 把欄名中的所有空白（半形 / 全形 　 / BOM ﻿）剝掉再查表，
+      // 容忍「姓 名」「職 稱」這種為了視覺對齊把字拉開的標題寫法
+      const row = {};
+      for (const k in rawRow) {
+        row[k.replace(/\s+/g, '')] = rawRow[k];
+      }
       const title = String(row['職稱'] || row['title'] || '').trim();
       const name = String(row['姓名'] || row['name'] || row['名字'] || '').trim();
       const idNumber = String(
