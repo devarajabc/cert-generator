@@ -1044,26 +1044,22 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   .cert-preview table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
+    border-collapse: collapse;
     margin: 1.2rem 0;
     font-family: 'Noto Sans TC', sans-serif;
   }
   .cert-preview th, .cert-preview td {
-    border-right: 1px solid #333;
-    border-bottom: 1px solid #333;
+    border: 1px solid #333;
     padding: 0.4rem 0.6rem;
     text-align: center;
     font-size: 0.9rem;
+    background: transparent;
   }
   .cert-preview th {
-    background: #f3efe6;
     font-weight: 600;
-    border-top: 1px solid #333;
   }
-  .cert-preview th:first-child,
-  .cert-preview td:first-child {
-    border-left: 1px solid #333;
+  .cert-preview tbody tr:hover {
+    background: transparent;
   }
   .cert-preview .cert-signature {
     margin-top: 2.5rem;
@@ -1281,25 +1277,22 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   .pdf-cert table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
+    border-collapse: collapse;
     margin: 1em 0;
     font-family: 'Noto Sans TC', sans-serif;
   }
   .pdf-cert th, .pdf-cert td {
-    border-right: 1px solid #000;
-    border-bottom: 1px solid #000;
+    border: 1px solid #000;
     padding: 6pt 8pt;
     text-align: center;
     font-size: 12pt;
+    background: transparent;
   }
   .pdf-cert th {
     font-weight: 600;
-    border-top: 1px solid #000;
   }
-  .pdf-cert th:first-child,
-  .pdf-cert td:first-child {
-    border-left: 1px solid #000;
+  .pdf-cert tbody tr:hover {
+    background: transparent;
   }
   .pdf-cert .cert-signature {
     margin-top: 2em;
