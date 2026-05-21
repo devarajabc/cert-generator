@@ -84,6 +84,18 @@
     color: var(--text-muted);
     font-weight: 400;
   }
+  .motto {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 0.25rem;
+    letter-spacing: 0.01em;
+    opacity: 0.85;
+  }
+  .motto cite {
+    font-style: normal;
+    opacity: 0.75;
+  }
 
   /* Tabs */
   .tabs {
@@ -1027,14 +1039,18 @@
 <body>
 
 <div class="proto-banner">
-  <strong>v0.4.2 內嵌版</strong> ・ 登錄表改為每堂課一份；修正表格底線；全部函式庫內嵌。
+  <strong>v0.5.0 內嵌版</strong> ・ 加入單元測試與 GitHub Actions CI；匯入失敗顯示詳細逐列原因；證書字級調整；新增線上試玩版。
 </div>
 
 <header>
   <div class="header-inner">
     <div class="title-row">
-      <h1>研習證明書產生系統<span class="accent">v0.4.2</span></h1>
+      <h1>研習證明書產生系統<span class="accent">v0.5.0</span></h1>
       <div class="subtitle">財團法人台南市私立天主教瑞復益智中心</div>
+      <div class="motto">
+        &ldquo;Amen, I say to you, whatever you did for one of these least brothers of mine, you did for me.&rdquo;
+        &nbsp;<cite>— Matthew 25:40</cite>
+      </div>
     </div>
     <nav class="tabs">
       <button class="tab active" data-tab="employees">員工主檔</button>

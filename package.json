@@ -1,6 +1,6 @@
 {
   "name": "cert-generator",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "研習證明書批次產生系統 — 給社福機構社工使用的零安裝瀏覽器工具",
   "private": true,
   "scripts": {
