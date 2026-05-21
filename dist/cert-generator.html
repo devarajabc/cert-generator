@@ -2093,8 +2093,19 @@ document.getElementById('import-excel').addEventListener('change', async (ev) =>
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet);
 
-    let added = 0, skipped = 0, converted = 0;
-    for (const row of rows) {
+    // 診斷資訊：實際讀到的欄名（含隱形空白／BOM 也會顯示），方便排查匯入失敗原因
+    const detectedHeaders = rows.length ? Object.keys(rows[0]) : [];
+    console.log('[匯入] 檔案:', file.name);
+    console.log('[匯入] 工作表:', wb.SheetNames[0]);
+    console.log('[匯入] 偵測到的欄名:', JSON.stringify(detectedHeaders));
+    console.log('[匯入] 資料筆數（不含標題列）:', rows.length);
+
+    let added = 0, converted = 0;
+    const reasons = { noName: 0, noId: 0, duplicate: 0, badBirth: 0 };
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const excelRow = i + 2;  // +2：i 從 0 起算 + 跳過標題列
       const title = String(row['職稱'] || row['title'] || '').trim();
       const name = String(row['姓名'] || row['name'] || row['名字'] || '').trim();
       const idNumber = String(
@@ -2102,8 +2113,21 @@ document.getElementById('import-excel').addEventListener('change', async (ev) =>
       ).trim().toUpperCase();
       const birthRaw = row['生日'] || row['出生日期'] || row['birthday'] || row['出生年月日'] || '';
 
-      if (!name || !idNumber) { skipped++; continue; }
-      if (state.employees.some(e => e.idNumber === idNumber)) { skipped++; continue; }
+      if (!name) {
+        reasons.noName++;
+        console.warn(`[匯入] 第 ${excelRow} 列：找不到「姓名」欄（檢查標題列字串是否有隱形空白或別字）`, row);
+        continue;
+      }
+      if (!idNumber) {
+        reasons.noId++;
+        console.warn(`[匯入] 第 ${excelRow} 列「${name}」：找不到「身分證字號」欄`, row);
+        continue;
+      }
+      if (state.employees.some(e => e.idNumber === idNumber)) {
+        reasons.duplicate++;
+        console.warn(`[匯入] 第 ${excelRow} 列「${name}」：身分證 ${idNumber} 已存在，跳過`);
+        continue;
+      }
 
       // 解析生日：日期型儲存格走 Date 分支，字串走「抓三組數字」分支
       let by, bm, bd;
@@ -2114,7 +2138,11 @@ document.getElementById('import-excel').addEventListener('change', async (ev) =>
       } else {
         // 字串：支援 "114/05/20"、"114-5-20"、"114年5月20日"、"1991/5/12" 等格式
         const parts = String(birthRaw).trim().match(/(\d+)/g);
-        if (!parts || parts.length < 3) { skipped++; continue; }
+        if (!parts || parts.length < 3) {
+          reasons.badBirth++;
+          console.warn(`[匯入] 第 ${excelRow} 列「${name}」：生日格式無法解析（值="${birthRaw}"）`);
+          continue;
+        }
         [by, bm, bd] = parts.map(Number);
       }
       // 自動偵測：年份 > 200 視為西元，轉換成民國
@@ -2130,14 +2158,27 @@ document.getElementById('import-excel').addEventListener('change', async (ev) =>
       });
       added++;
     }
+
+    const skipped = reasons.noName + reasons.noId + reasons.duplicate + reasons.badBirth;
     saveState();
     renderEmployeeTable();
-    let msg = `已匯入 ${added} 筆，跳過 ${skipped} 筆`;
-    if (converted > 0) msg += `（其中 ${converted} 筆生日由西元自動換算成民國）`;
-    toast(msg, 'success');
+
+    let msg;
+    if (added === 0 && skipped > 0) {
+      const breakdown = [];
+      if (reasons.noName) breakdown.push(`姓名缺失 ${reasons.noName}`);
+      if (reasons.noId) breakdown.push(`身分證缺失 ${reasons.noId}`);
+      if (reasons.duplicate) breakdown.push(`重複 ${reasons.duplicate}`);
+      if (reasons.badBirth) breakdown.push(`生日格式錯 ${reasons.badBirth}`);
+      msg = `匯入 0 筆，跳過 ${skipped} 筆（${breakdown.join('、')}）。按 F12 開 Console 看詳細逐列原因`;
+    } else {
+      msg = `已匯入 ${added} 筆，跳過 ${skipped} 筆`;
+      if (converted > 0) msg += `（其中 ${converted} 筆生日由西元自動換算成民國）`;
+    }
+    toast(msg, added === 0 ? 'error' : 'success');
   } catch (e) {
-    console.error(e);
-    toast('匯入失敗，請檢查檔案格式', 'error');
+    console.error('[匯入] 解析失敗:', e);
+    toast(`匯入失敗：${e.message || '請檢查檔案格式'}（按 F12 看 Console）`, 'error');
   }
   ev.target.value = '';
 });
