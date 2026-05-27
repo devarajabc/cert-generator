@@ -2161,8 +2161,11 @@ async function generateRegistrationDocx(employees, t, course) {
     ShadingType, PageOrientation
   } = D;
 
-  const trainDateStr = `民國 ${t.trainDate.y} 年 ${t.trainDate.m} 月 ${t.trainDate.d} 日`;
-  const issueDateStr = `民國 ${t.issueDate.y} 年 ${t.issueDate.m} 月 ${t.issueDate.d} 日`;
+  const pad2 = n => String(n).padStart(2, '0');
+  // 在職訓練日期欄走 ROC 緊湊式 YYYMMDD（範本參考：1150321 = 民國 115 年 03 月 21 日）
+  const trainDateStr = `${t.trainDate.y}${pad2(t.trainDate.m)}${pad2(t.trainDate.d)}`;
+  // 備查日期保留人類可讀格式但前綴改成「中華民國」
+  const issueDateStr = `中華民國${t.issueDate.y} 年 ${t.issueDate.m} 月 ${t.issueDate.d} 日`;
   const docNumStr = `南市社身字第 ${t.docNum} 號`;
 
   const border = { style: BorderStyle.SINGLE, size: 6, color: '000000' };
@@ -2171,18 +2174,22 @@ async function generateRegistrationDocx(employees, t, course) {
 
   // 欄位寬度（單位 DXA，總和 = A4 橫向內容寬度）
   // A4 portrait usable width ≈ 10466 DXA（21cm - 0.5" 兩側 margin）
-  // 比例：姓名 7.8% / 身分證 10.4% / 訓練日期 11.6% / 課程 19.5% / 辦理單位 18.1% / 時數 8.4% / 備查 17.6% / 備註 6.4%
-  const colWidths = [820, 1090, 1220, 2040, 1900, 880, 1840, 670];
+  // 欄寬目標：標題 8 字以下的欄位（在職訓練日期/合格時數）強制 3 字寬，課程/辦理單位
+  // 4 字寬，「各級主管機關同意備查日期及文號」8 字寬，配合下方 size 對應的字寬可以
+  // 拉出「在職訓\n練日期」「在職訓練\n課程名稱」「各級主管機關同意\n備查日期及文號」這種公文標準斷行
+  const colWidths = [900, 1400, 1000, 1300, 1250, 950, 2350, 1320];
   const totalWidth = colWidths.reduce((s, w) => s + w, 0);
 
   // 工具：建立儲存格
+  // 字級 22 = 11pt（header bold）/ 20 = 10pt（body normal）。範本看起來表頭和內文相近，
+  // header 略大 + bold 拉出層次。背景色 DEEBF7 取 Word 預設的淺藍灰（範本就是這個調）。
   const makeCell = (content, width, isHeader = false) => {
     const lines = Array.isArray(content) ? content : [content];
     const paras = lines.map(line => new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [new TextRun({
         text: String(line || ''),
-        size: isHeader ? 20 : 18,
+        size: isHeader ? 22 : 20,
         bold: isHeader,
         font: '標楷體'
       })]
@@ -2192,7 +2199,7 @@ async function generateRegistrationDocx(employees, t, course) {
       width: { size: width, type: WidthType.DXA },
       margins: cellMargins,
       verticalAlign: VerticalAlign.CENTER,
-      shading: isHeader ? { fill: 'E8EFEB', type: ShadingType.CLEAR } : undefined,
+      shading: isHeader ? { fill: 'DEEBF7', type: ShadingType.CLEAR } : undefined,
       children: paras
     });
   };
@@ -2226,7 +2233,7 @@ async function generateRegistrationDocx(employees, t, course) {
       makeCell(trainDateStr, colWidths[2]),
       makeCell(course.name, colWidths[3]),
       makeCell('心智障礙者日間服務中心', colWidths[4]),
-      makeCell(`${course.hours} 小時`, colWidths[5]),
+      makeCell(`${course.hours}`, colWidths[5]),
       makeCell([issueDateStr, docNumStr], colWidths[6]),
       makeCell('', colWidths[7])
     ]
