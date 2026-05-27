@@ -2491,6 +2491,9 @@ function hideProgress() {
 }
 
 // ========== PDF 證書 HTML 建構 ==========
+// 證書內容工具：日期 1-2 位數字零補（讓「5/16」變「05/16」，跟機構公文格式一致）
+const pad2 = n => String(n).padStart(2, '0');
+
 function buildCertHtmlForPdf(emp, t, courses, totalHours) {
   const instSeal = state.settings.sealInstitution;
   const dirSeal = state.settings.sealDirector;
@@ -2510,10 +2513,10 @@ function buildCertHtmlForPdf(emp, t, courses, totalHours) {
         <div>南市社身字第 ${escapeHtml(t.docNum)} 號</div>
       </div>
       <div class="cert-person">
-        ${escapeHtml(emp.name)} 君（身分證字號 ${escapeHtml(emp.idNumber)}）（生日 ${emp.birthY} 年 ${emp.birthM} 月 ${emp.birthD} 日）
+        ${escapeHtml(emp.name)} 君（${escapeHtml(emp.idNumber)}）（${emp.birthY} 年 ${pad2(emp.birthM)} 月 ${pad2(emp.birthD)} 日）
       </div>
       <div class="cert-body">
-        參加 財團法人台南市私立天主教瑞復益智中心 於中華民國 ${t.trainDate.y} 年 ${t.trainDate.m} 月 ${t.trainDate.d} 日辦理之研習訓練課程共計 ${totalHours} 小時，訓練結業。
+        參加財團法人台南市私立天主教瑞復益智中心於中華民國 ${t.trainDate.y} 年 ${pad2(t.trainDate.m)} 月 ${pad2(t.trainDate.d)} 日辦理之研習訓練課程共計 ${totalHours} 小時，訓練結業。
       </div>
       <div class="cert-attest">特此證明</div>
       <table>
@@ -2526,7 +2529,7 @@ function buildCertHtmlForPdf(emp, t, courses, totalHours) {
           <tr><th>課程名稱</th><th>講師</th><th>時數</th></tr>
         </thead>
         <tbody>
-          ${courses.map(c => `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.instructor)} 講師</td><td>${c.hours}小時</td></tr>`).join('')}
+          ${courses.map(c => `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.instructor)}</td><td>${c.hours} 小時</td></tr>`).join('')}
         </tbody>
       </table>
       <div class="cert-signature">
@@ -2540,7 +2543,7 @@ function buildCertHtmlForPdf(emp, t, courses, totalHours) {
         </div>
       </div>
       <div class="cert-date-bottom">
-        中華民國 ${t.signDate.y} 年 ${t.signDate.m} 月 ${t.signDate.d} 日
+        中華民國 ${t.signDate.y} 年 ${pad2(t.signDate.m)} 月 ${pad2(t.signDate.d)} 日
       </div>
     </div>
   `;
@@ -2843,10 +2846,10 @@ function previewCertificate() {
         <div class="cert-meta-line cert-meta-doc">南市社身字第 ${escapeHtml(t.docNum)} 號</div>
       </div>
       <div class="cert-person">
-        ${escapeHtml(emp.name)} 君（身分證字號 ${escapeHtml(emp.idNumber)}）（生日 ${emp.birthY} 年 ${emp.birthM} 月 ${emp.birthD} 日）
+        ${escapeHtml(emp.name)} 君（${escapeHtml(emp.idNumber)}）（${emp.birthY} 年 ${pad2(emp.birthM)} 月 ${pad2(emp.birthD)} 日）
       </div>
       <div class="cert-body">
-        參加 財團法人台南市私立天主教瑞復益智中心 於中華民國 ${t.trainDate.y} 年 ${t.trainDate.m} 月 ${t.trainDate.d} 日辦理之研習訓練課程共計 ${totalHours} 小時，訓練結業。
+        參加財團法人台南市私立天主教瑞復益智中心於中華民國 ${t.trainDate.y} 年 ${pad2(t.trainDate.m)} 月 ${pad2(t.trainDate.d)} 日辦理之研習訓練課程共計 ${totalHours} 小時，訓練結業。
       </div>
       <div class="cert-attest">特此證明</div>
       <table>
@@ -2859,7 +2862,7 @@ function previewCertificate() {
           <tr><th>課程名稱</th><th>講師</th><th>時數</th></tr>
         </thead>
         <tbody>
-          ${validCourses.map(c => `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.instructor)} 講師</td><td>${c.hours}小時</td></tr>`).join('')}
+          ${validCourses.map(c => `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.instructor)}</td><td>${c.hours} 小時</td></tr>`).join('')}
         </tbody>
       </table>
       <div class="cert-signature">
@@ -2873,7 +2876,7 @@ function previewCertificate() {
         </div>
       </div>
       <div class="cert-date-bottom">
-        中華民國 ${t.signDate.y} 年 ${t.signDate.m} 月 ${t.signDate.d} 日
+        中華民國 ${t.signDate.y} 年 ${pad2(t.signDate.m)} 月 ${pad2(t.signDate.d)} 日
       </div>
     </div>
   `;
