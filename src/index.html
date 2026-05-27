@@ -1146,15 +1146,11 @@
       <div class="card-title"><span class="card-step">2</span> 訓練資訊</div>
       <div class="card-hint">日期欄請輸入「民國年」三碼。例如 114 表示民國 114 年。</div>
 
-      <div class="field-row cols-2">
+      <div class="field-row">
         <div class="field">
           <label class="label">文號 <span class="required">*</span></label>
           <input type="text" class="input" id="t-docnum" placeholder="例：114001">
           <div class="input-hint">將顯示為：南市社身字第 <span id="docnum-preview" style="color: var(--primary); font-weight: 600;">XXX</span> 號</div>
-        </div>
-        <div class="field">
-          <label class="label">辦理單位</label>
-          <input type="text" class="input" id="t-org" value="" placeholder="請輸入辦理單位完整名稱">
         </div>
       </div>
 
@@ -2064,7 +2060,7 @@ function buildCertHtmlForPdf(emp, t, courses, totalHours) {
         ${escapeHtml(emp.name)} 君（身分證字號 ${escapeHtml(emp.idNumber)}）（生日 ${emp.birthY} 年 ${emp.birthM} 月 ${emp.birthD} 日）
       </div>
       <div class="cert-body">
-        參加 ${escapeHtml(t.org)} 於中華民國 ${t.trainDate.y} 年 ${t.trainDate.m} 月 ${t.trainDate.d} 日辦理之研習訓練課程共計 ${totalHours} 小時，訓練結業。
+        參加 財團法人台南市私立天主教瑞復益智中心 於中華民國 ${t.trainDate.y} 年 ${t.trainDate.m} 月 ${t.trainDate.d} 日辦理之研習訓練課程共計 ${totalHours} 小時，訓練結業。
       </div>
       <div class="cert-attest">特此證明</div>
       <table>
@@ -2078,7 +2074,7 @@ function buildCertHtmlForPdf(emp, t, courses, totalHours) {
       <div class="cert-signature">
         <div class="cert-org-line">
           ${instSealHtml}
-          <div>${escapeHtml(t.org)}</div>
+          <div>財團法人台南市私立天主教瑞復益智中心</div>
         </div>
         <div class="cert-director-line">
           <div class="director-label">主任</div>
@@ -2178,7 +2174,9 @@ async function generateRegistrationDocx(employees, t, course) {
   const cellMargins = { top: 100, bottom: 100, left: 100, right: 100 };
 
   // 欄位寬度（單位 DXA，總和 = A4 橫向內容寬度）
-  const colWidths = [1200, 1600, 1800, 3000, 2800, 1300, 2700, 1000];
+  // A4 portrait usable width ≈ 10466 DXA（21cm - 0.5" 兩側 margin）
+  // 比例：姓名 7.8% / 身分證 10.4% / 訓練日期 11.6% / 課程 19.5% / 辦理單位 18.1% / 時數 8.4% / 備查 17.6% / 備註 6.4%
+  const colWidths = [820, 1090, 1220, 2040, 1900, 880, 1840, 670];
   const totalWidth = colWidths.reduce((s, w) => s + w, 0);
 
   // 工具：建立儲存格
@@ -2231,7 +2229,7 @@ async function generateRegistrationDocx(employees, t, course) {
       makeCell(emp.idNumber, colWidths[1]),
       makeCell(trainDateStr, colWidths[2]),
       makeCell(course.name, colWidths[3]),
-      makeCell(t.org, colWidths[4]),
+      makeCell('心智障礙者日間服務中心', colWidths[4]),
       makeCell(`${course.hours} 小時`, colWidths[5]),
       makeCell([issueDateStr, docNumStr], colWidths[6]),
       makeCell('', colWidths[7])
@@ -2256,7 +2254,7 @@ async function generateRegistrationDocx(employees, t, course) {
           size: {
             width: 11906,   // A4 短邊
             height: 16838,  // A4 長邊
-            orientation: PageOrientation.LANDSCAPE
+            orientation: PageOrientation.PORTRAIT
           },
           margin: { top: 720, right: 720, bottom: 720, left: 720 }
         }
@@ -2335,7 +2333,6 @@ function downloadBlob(blob, filename) {
 function getTrainingData() {
   return {
     docNum: document.getElementById('t-docnum').value.trim(),
-    org: document.getElementById('t-org').value.trim(),
     issueDate: {
       y: parseInt(document.getElementById('t-issuedate-y').value) || 0,
       m: parseInt(document.getElementById('t-issuedate-m').value) || 0,
@@ -2390,7 +2387,7 @@ function previewCertificate() {
         ${escapeHtml(emp.name)} 君（身分證字號 ${escapeHtml(emp.idNumber)}）（生日 ${emp.birthY} 年 ${emp.birthM} 月 ${emp.birthD} 日）
       </div>
       <div class="cert-body">
-        參加 ${escapeHtml(t.org)} 於中華民國 ${t.trainDate.y} 年 ${t.trainDate.m} 月 ${t.trainDate.d} 日辦理之研習訓練課程共計 ${totalHours} 小時，訓練結業。
+        參加 財團法人台南市私立天主教瑞復益智中心 於中華民國 ${t.trainDate.y} 年 ${t.trainDate.m} 月 ${t.trainDate.d} 日辦理之研習訓練課程共計 ${totalHours} 小時，訓練結業。
       </div>
       <div class="cert-attest">特此證明</div>
       <table>
@@ -2404,7 +2401,7 @@ function previewCertificate() {
       <div class="cert-signature">
         <div class="cert-org-line">
           <div class="seal-placeholder">機構<br>用印</div>
-          <div>${escapeHtml(t.org)}</div>
+          <div>財團法人台南市私立天主教瑞復益智中心</div>
         </div>
         <div class="cert-director-line">
           <div class="director-label">主任</div>
