@@ -567,7 +567,8 @@
     margin: 0 auto;
     font-family: 'DFKai-SB', '標楷體', 'BiauKai', 'Kaiti TC', 'Noto Serif TC', serif;
     color: #1a1a1a;
-    line-height: 1.9;
+    /* 對齊 .pdf-cert 的 1.4 行距，避免預覽看起來鬆但 PDF 緊（WYSIWYG） */
+    line-height: 1.4;
     font-size: 15px;
     max-width: 720px;
   }
@@ -815,7 +816,10 @@
     color: #000;
     font-family: 'DFKai-SB', '標楷體', 'BiauKai', 'Kaiti TC', 'Noto Serif TC', serif;
     font-size: 14pt;
-    line-height: 1.9;
+    /* 行距 1.4 — Word 預設行距 ~1.0-1.15 偏緊；1.4 留一點呼吸但確保整張塞得進 A4
+       一頁。原本 1.9 在 Mac fallback 字體（BiauKai/Kaiti TC）累積垂直高度後會
+       超出一頁，這也是「Windows 一頁、Mac 變兩頁」的元兇 */
+    line-height: 1.4;
     box-sizing: border-box;
   }
   .pdf-cert .cert-title {
