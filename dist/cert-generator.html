@@ -1032,7 +1032,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   .cert-preview .cert-meta {
     text-align: right;
     margin-bottom: 1.5rem;
-    font-size: 1.2rem;
+    font-size: 0.9rem;
   }
   .cert-preview .cert-meta-line {
     margin-bottom: 0.3rem;
@@ -1040,17 +1040,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   .cert-preview .cert-meta-doc { margin-bottom: 0; }
   .cert-preview .cert-person {
     margin: 1.2rem 0;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
   }
   .cert-preview .cert-body {
     margin: 1.2rem 0;
     text-indent: 2em;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
   }
   .cert-preview .cert-attest {
     text-align: left;
     margin: 1.5rem 0;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
   }
   .cert-preview table {
     width: 100%;
@@ -1062,11 +1062,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     border: 1px solid #333;
     padding: 0.4rem 0.6rem;
     text-align: center;
-    font-size: 1.35rem;
+    font-size: 1.05rem;
     background: transparent;
   }
+  /* Reference 範本表頭與內容同字級同字重 */
   .cert-preview th {
-    font-weight: 600;
+    font-weight: normal;
   }
   .cert-preview tbody tr:hover {
     background: transparent;
@@ -1082,13 +1083,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     display: flex;
     align-items: center;
     gap: 1rem;
-    font-size: 1.65rem;
+    font-size: 1.35rem;
     margin-bottom: 1.75rem;
   }
   .cert-preview .cert-director-line {
     display: flex;
     align-items: center;
-    font-size: 1.65rem;
+    font-size: 1.35rem;
     padding: 0 3rem 0 5rem;
     gap: 4rem;
   }
@@ -1124,7 +1125,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   .cert-preview .cert-date-bottom {
     text-align: center;
     margin-top: 2rem;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
   }
 
   /* Generate result modal */
@@ -1258,7 +1259,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   .pdf-cert {
     width: 210mm;
-    padding: 25mm 25mm;
+    /* 邊界對齊機構 Word 範本：top/bottom 1 inch、left/right 1.25 inch */
+    padding: 1in 1.25in;
     background: white;
     color: #000;
     font-family: 'DFKai-SB', '標楷體', 'BiauKai', 'Kaiti TC', 'Noto Serif TC', serif;
@@ -1268,7 +1270,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   .pdf-cert .cert-title {
     text-align: center;
-    font-size: 32pt;
+    font-size: 26pt;
     font-weight: 700;
     letter-spacing: 0.5em;
     margin: 0 0 1.5em;
@@ -1276,15 +1278,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   .pdf-cert .cert-meta {
     text-align: right;
-    font-size: 16pt;
+    font-size: 12pt;
     margin-bottom: 1em;
     line-height: 1.7;
   }
-  .pdf-cert .cert-person { margin: 1em 0; font-size: 24pt; }
-  .pdf-cert .cert-body { margin: 0.8em 0; font-size: 24pt; }
+  .pdf-cert .cert-person { margin: 1em 0; font-size: 20pt; }
+  .pdf-cert .cert-body { margin: 0.8em 0; font-size: 20pt; }
   .pdf-cert .cert-attest {
     margin: 1em 0;
-    font-size: 24pt;
+    font-size: 20pt;
   }
   .pdf-cert table {
     width: 100%;
@@ -1296,11 +1298,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     border: 1px solid #000;
     padding: 6pt 8pt;
     text-align: center;
-    font-size: 18pt;
+    font-size: 14pt;
     background: transparent;
   }
+  /* Reference 範本表頭與內容同字級同字重，故不再 bold */
   .pdf-cert th {
-    font-weight: 600;
+    font-weight: normal;
   }
   .pdf-cert tbody tr:hover {
     background: transparent;
@@ -1317,14 +1320,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     align-items: center;
     gap: 10pt;
     margin-bottom: 1.5em;
-    font-size: 22pt;
+    font-size: 18pt;
   }
   .pdf-cert .cert-director-line {
     display: flex;
     align-items: center;
     gap: 40pt;
     padding: 0 30pt 0 60pt;
-    font-size: 22pt;
+    font-size: 18pt;
   }
   .pdf-cert .seal-img-inst {
     width: 80pt;
@@ -1366,7 +1369,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   .pdf-cert .cert-date-bottom {
     text-align: center;
     margin-top: 2em;
-    font-size: 24pt;
+    font-size: 20pt;
   }
 
   /* 進度條 */
@@ -2510,11 +2513,16 @@ function buildCertHtmlForPdf(emp, t, courses, totalHours) {
       </div>
       <div class="cert-attest">特此證明</div>
       <table>
+        <colgroup>
+          <col style="width: 57%">
+          <col style="width: 29%">
+          <col style="width: 14%">
+        </colgroup>
         <thead>
           <tr><th>課程名稱</th><th>講師</th><th>時數</th></tr>
         </thead>
         <tbody>
-          ${courses.map(c => `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.instructor)} 講師</td><td>${c.hours} 小時</td></tr>`).join('')}
+          ${courses.map(c => `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.instructor)} 講師</td><td>${c.hours}小時</td></tr>`).join('')}
         </tbody>
       </table>
       <div class="cert-signature">
@@ -2611,11 +2619,8 @@ async function generateRegistrationDocx(employees, t, course) {
     ShadingType, PageOrientation
   } = D;
 
-  const pad2 = n => String(n).padStart(2, '0');
-  // 在職訓練日期欄走 ROC 緊湊式 YYYMMDD（範本參考：1150321 = 民國 115 年 03 月 21 日）
-  const trainDateStr = `${t.trainDate.y}${pad2(t.trainDate.m)}${pad2(t.trainDate.d)}`;
-  // 備查日期保留人類可讀格式但前綴改成「中華民國」
-  const issueDateStr = `中華民國${t.issueDate.y} 年 ${t.issueDate.m} 月 ${t.issueDate.d} 日`;
+  const trainDateStr = `民國 ${t.trainDate.y} 年 ${t.trainDate.m} 月 ${t.trainDate.d} 日`;
+  const issueDateStr = `民國 ${t.issueDate.y} 年 ${t.issueDate.m} 月 ${t.issueDate.d} 日`;
   const docNumStr = `南市社身字第 ${t.docNum} 號`;
 
   const border = { style: BorderStyle.SINGLE, size: 6, color: '000000' };
@@ -2624,22 +2629,19 @@ async function generateRegistrationDocx(employees, t, course) {
 
   // 欄位寬度（單位 DXA，總和 = A4 橫向內容寬度）
   // A4 portrait usable width ≈ 10466 DXA（21cm - 0.5" 兩側 margin）
-  // 欄寬目標：標題 8 字以下的欄位（在職訓練日期/合格時數）強制 3 字寬，課程/辦理單位
-  // 4 字寬，「各級主管機關同意備查日期及文號」8 字寬，配合下方 size 對應的字寬可以
-  // 拉出「在職訓\n練日期」「在職訓練\n課程名稱」「各級主管機關同意\n備查日期及文號」這種公文標準斷行
-  const colWidths = [900, 1400, 1000, 1300, 1250, 950, 2350, 1320];
+  // 比例：姓名 7.8% / 身分證 10.4% / 訓練日期 11.6% / 課程 19.5% / 辦理單位 18.1% / 時數 8.4% / 備查 17.6% / 備註 6.4%
+  // TODO: 需要機構提供 DOCX 範本檔，用 scripts/inspect-docx.js 抓出精確規格再對齊
+  const colWidths = [820, 1090, 1220, 2040, 1900, 880, 1840, 670];
   const totalWidth = colWidths.reduce((s, w) => s + w, 0);
 
   // 工具：建立儲存格
-  // 字級 22 = 11pt（header bold）/ 20 = 10pt（body normal）。範本看起來表頭和內文相近，
-  // header 略大 + bold 拉出層次。背景色 DEEBF7 取 Word 預設的淺藍灰（範本就是這個調）。
   const makeCell = (content, width, isHeader = false) => {
     const lines = Array.isArray(content) ? content : [content];
     const paras = lines.map(line => new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [new TextRun({
         text: String(line || ''),
-        size: isHeader ? 22 : 20,
+        size: isHeader ? 20 : 18,
         bold: isHeader,
         font: '標楷體'
       })]
@@ -2649,7 +2651,7 @@ async function generateRegistrationDocx(employees, t, course) {
       width: { size: width, type: WidthType.DXA },
       margins: cellMargins,
       verticalAlign: VerticalAlign.CENTER,
-      shading: isHeader ? { fill: 'DEEBF7', type: ShadingType.CLEAR } : undefined,
+      shading: isHeader ? { fill: 'E8EFEB', type: ShadingType.CLEAR } : undefined,
       children: paras
     });
   };
@@ -2683,7 +2685,7 @@ async function generateRegistrationDocx(employees, t, course) {
       makeCell(trainDateStr, colWidths[2]),
       makeCell(course.name, colWidths[3]),
       makeCell('心智障礙者日間服務中心', colWidths[4]),
-      makeCell(`${course.hours}`, colWidths[5]),
+      makeCell(`${course.hours} 小時`, colWidths[5]),
       makeCell([issueDateStr, docNumStr], colWidths[6]),
       makeCell('', colWidths[7])
     ]
@@ -2844,11 +2846,16 @@ function previewCertificate() {
       </div>
       <div class="cert-attest">特此證明</div>
       <table>
+        <colgroup>
+          <col style="width: 57%">
+          <col style="width: 29%">
+          <col style="width: 14%">
+        </colgroup>
         <thead>
           <tr><th>課程名稱</th><th>講師</th><th>時數</th></tr>
         </thead>
         <tbody>
-          ${validCourses.map(c => `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.instructor)} 講師</td><td>${c.hours} 小時</td></tr>`).join('')}
+          ${validCourses.map(c => `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.instructor)} 講師</td><td>${c.hours}小時</td></tr>`).join('')}
         </tbody>
       </table>
       <div class="cert-signature">
