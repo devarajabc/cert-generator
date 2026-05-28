@@ -2166,6 +2166,8 @@ async function generatePdfBlob(emp, t, courses, totalHours) {
 }
 
 // ========== 產生登錄表 DOCX（單堂課程一份）==========
+// 規格依機構 Word 範本 (1150321身心障礙性別平等教育在職訓練登錄表)，
+// 用 scripts/inspect-docx.js 抓出 ground truth 後 1:1 對齊
 async function generateRegistrationDocx(employees, t, course) {
   const D = window.docx;
   if (!D) throw new Error('docx 函式庫未載入');
@@ -2176,62 +2178,76 @@ async function generateRegistrationDocx(employees, t, course) {
     ShadingType, PageOrientation
   } = D;
 
-  const trainDateStr = `民國 ${t.trainDate.y} 年 ${t.trainDate.m} 月 ${t.trainDate.d} 日`;
-  const issueDateStr = `民國 ${t.issueDate.y} 年 ${t.issueDate.m} 月 ${t.issueDate.d} 日`;
-  const docNumStr = `南市社身字第 ${t.docNum} 號`;
+  // 資料格式（範本實測）：
+  //   訓練日期 → ROC 緊湊式 YYYMMDD，如 "1150321"
+  //   備查日期 → "中華民國115年3月5日"（無空格、月日不補零）
+  //   文號 → "南市社身字第1150315720號"（無空格）
+  const trainDateStr = `${t.trainDate.y}${pad2(t.trainDate.m)}${pad2(t.trainDate.d)}`;
+  const issueDateStr = `中華民國${t.issueDate.y}年${t.issueDate.m}月${t.issueDate.d}日`;
+  const docNumStr = `南市社身字第${t.docNum}號`;
 
   const border = { style: BorderStyle.SINGLE, size: 6, color: '000000' };
   const borders = { top: border, bottom: border, left: border, right: border };
   const cellMargins = { top: 100, bottom: 100, left: 100, right: 100 };
 
-  // 欄位寬度（單位 DXA，總和 = A4 橫向內容寬度）
-  // A4 portrait usable width ≈ 10466 DXA（21cm - 0.5" 兩側 margin）
-  // 比例：姓名 7.8% / 身分證 10.4% / 訓練日期 11.6% / 課程 19.5% / 辦理單位 18.1% / 時數 8.4% / 備查 17.6% / 備註 6.4%
-  // TODO: 需要機構提供 DOCX 範本檔，用 scripts/inspect-docx.js 抓出精確規格再對齊
-  const colWidths = [820, 1090, 1220, 2040, 1900, 880, 1840, 670];
-  const totalWidth = colWidths.reduce((s, w) => s + w, 0);
+  // 欄寬：範本實測（用 inspect-docx.js 抓出）
+  // 比例：姓名 8.9% / 身分證 13.9% / 訓練日期 10.1% / 課程 15.2%
+  //     / 辦理單位 12.7% / 時數 8.9% / 備查 25.3% / 備註 5.1%
+  // 總寬 11200 DXA = 19.75 cm
+  const colWidths = [992, 1560, 1134, 1701, 1418, 992, 2835, 568];
+  const totalWidth = colWidths.reduce((s, w) => s + w, 0);  // 11200
 
   // 工具：建立儲存格
-  const makeCell = (content, width, isHeader = false) => {
+  // options: { isHeader, size, align, columnSpan }
+  //   isHeader=true → 套用 DEEAF6 淡藍底色
+  //   size: TextRun half-pt 數字（不傳 = 繼承文件預設 12pt）
+  //   align: 'center' (預設) 或 'left'
+  //   columnSpan: 跨欄數（標題列用 8 跨整列）
+  const makeCell = (content, width, options = {}) => {
+    const { isHeader = false, size, align = 'center', columnSpan } = options;
     const lines = Array.isArray(content) ? content : [content];
     const paras = lines.map(line => new Paragraph({
-      alignment: AlignmentType.CENTER,
+      alignment: align === 'left' ? AlignmentType.LEFT : AlignmentType.CENTER,
       children: [new TextRun({
         text: String(line || ''),
-        size: isHeader ? 20 : 18,
-        bold: isHeader,
+        ...(size ? { size } : {}),
         font: '標楷體'
       })]
     }));
-    return new TableCell({
+    const cellOpts = {
       borders,
       width: { size: width, type: WidthType.DXA },
       margins: cellMargins,
       verticalAlign: VerticalAlign.CENTER,
-      shading: isHeader ? { fill: 'E8EFEB', type: ShadingType.CLEAR } : undefined,
+      shading: isHeader ? { fill: 'DEEAF6', type: ShadingType.CLEAR } : undefined,
       children: paras
-    });
+    };
+    if (columnSpan) cellOpts.columnSpan = columnSpan;
+    return new TableCell(cellOpts);
   };
 
-  // 標題段落
-  const titlePara = new Paragraph({
-    alignment: AlignmentType.CENTER,
-    spacing: { before: 200, after: 400 },
-    children: [new TextRun({
-      text: '身心障礙者服務人員在職訓練登錄表',
-      bold: true,
-      size: 32,
-      font: '標楷體'
+  // 標題列 — 表格第一列、單一 cell 橫跨 8 欄、18pt 居中
+  const titleRow = new TableRow({
+    children: [makeCell('身心障礙者服務人員在職訓練登錄表', totalWidth, {
+      size: 36,  // 18pt
+      columnSpan: 8
     })]
   });
 
-  // 表頭
-  const headers = ['姓名', '身分證字號', '在職訓練日期', '在職訓練課程名稱',
-                   '在職訓練辦理單位', '在職訓練合格時數',
-                   '各級主管機關同意備查日期及文號', '備註'];
+  // 表頭列 — DEEAF6 底色，部分 cell 內含換行（陣列傳入會產 2 個段落）
+  const headerCells = [
+    ['姓名', colWidths[0]],
+    ['身分證字號', colWidths[1]],
+    ['在職訓練日期', colWidths[2]],
+    [['在職訓練', '課程名稱'], colWidths[3]],
+    [['在職訓練', '辦理單位'], colWidths[4]],
+    ['在職訓練合格時數', colWidths[5]],
+    [['各級主管機關同意', '備查日期及文號'], colWidths[6]],
+    ['備註', colWidths[7]]
+  ];
   const headerRow = new TableRow({
     tableHeader: true,
-    children: headers.map((h, i) => makeCell(h, colWidths[i], true))
+    children: headerCells.map(([content, w]) => makeCell(content, w, { isHeader: true }))
   });
 
   // 員工列（每位員工一列，全部對應到同一堂課程）
@@ -2241,9 +2257,12 @@ async function generateRegistrationDocx(employees, t, course) {
       makeCell(emp.idNumber, colWidths[1]),
       makeCell(trainDateStr, colWidths[2]),
       makeCell(course.name, colWidths[3]),
-      makeCell('心智障礙者日間服務中心', colWidths[4]),
-      makeCell(`${course.hours} 小時`, colWidths[5]),
-      makeCell([issueDateStr, docNumStr], colWidths[6]),
+      // 心智障礙者日間服務中心：12 字較長，顯式降到 10pt 與範本一致
+      makeCell('心智障礙者日間服務中心', colWidths[4], { size: 20 }),
+      // 時數欄只給數字（範本格式，不加「小時」）
+      makeCell(`${course.hours}`, colWidths[5]),
+      // 備查欄：2 行（日期 + 文號），10pt + 左對齊（範本格式）
+      makeCell([issueDateStr, docNumStr], colWidths[6], { size: 20, align: 'left' }),
       makeCell('', colWidths[7])
     ]
   }));
@@ -2251,27 +2270,32 @@ async function generateRegistrationDocx(employees, t, course) {
   const table = new Table({
     width: { size: totalWidth, type: WidthType.DXA },
     columnWidths: colWidths,
-    rows: [headerRow, ...employeeRows]
+    rows: [titleRow, headerRow, ...employeeRows]
   });
 
   const doc = new Document({
     styles: {
       default: {
-        document: { run: { font: '標楷體', size: 20 } }
+        // 預設 12pt（24 half-pt），標楷體 — 表頭與多數內容繼承這個
+        document: { run: { font: '標楷體', size: 24 } }
       }
     },
     sections: [{
       properties: {
         page: {
           size: {
-            width: 11906,   // A4 短邊
-            height: 16838,  // A4 長邊
+            width: 11906,   // A4 portrait 寬
+            height: 16838,  // A4 portrait 高
             orientation: PageOrientation.PORTRAIT
           },
-          margin: { top: 720, right: 720, bottom: 720, left: 720 }
+          // 邊界依範本算出的等效值：原範本 top 0.2"、bottom 0、L/R 1.25"
+          // 加 tblInd -1310 把表延伸到 left margin 內。我們直接用窄 margin
+          // 達到同樣效果：左 490、右 216、表格剛好填滿 A4 寬度
+          margin: { top: 284, right: 216, bottom: 0, left: 490 }
         }
       },
-      children: [titlePara, table]
+      // 標題已併入表格首列，這裡只需要 table
+      children: [table]
     }]
   });
 
