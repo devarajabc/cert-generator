@@ -1259,20 +1259,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     pointer-events: none;
   }
   .pdf-cert {
+    /* 鎖死 A4 直式：以微軟 Word 範本為主，邊界 top/bottom 1 inch、
+       left/right 1.25 inch (= 3.18 cm)。為避免 Mac 字體 fallback 後內容
+       高度溢出時 jsPDF 觸發 shrink-and-center 產生非預期左右白邊，
+       這裡明確鎖死 width × height = A4，加 overflow: hidden 把任何溢出
+       的部分裁掉（看到底部被切表示需要再縮字級/行距） */
     width: 210mm;
-    /* 邊界 25mm 四邊 — 不直接套範本 Word 的 1in/1.25in 是因為 html2canvas
-       走的字體 metric 比 Word 原生略大，1.25" 邊界下 Mac fallback 字體
-       (BiauKai/Kaiti TC) 算出來的 HTML 高度會剛好超出 A4，觸發 jsPDF 的
-       「整張等比例縮小置中」邏輯（見 generatePdfBlob 約 line 2155），
-       造成 PDF 多出非預期的左右白邊。25mm 邊界給內容更多寬度，讓 Mac
-       字體也能自然塞進一頁，避開那條 shrink-and-center 路徑。 */
-    padding: 25mm 25mm;
+    height: 297mm;
+    overflow: hidden;
+    padding: 1in 1.25in;
     background: white;
     color: #000;
     font-family: 'DFKai-SB', '標楷體', 'BiauKai', 'Kaiti TC', 'Noto Serif TC', serif;
     font-size: 14pt;
-    /* 行距 1.4 — Word 預設行距 ~1.0-1.15 偏緊；1.4 留一點呼吸但確保整張塞得進 A4
-       一頁。原本 1.9 在 Mac fallback 字體下累積垂直高度後會超出一頁 */
+    /* 行距 1.4 — Word 預設約 1.0-1.15，1.4 留一點呼吸但仍夠緊讓內容能塞進一頁 */
     line-height: 1.4;
     box-sizing: border-box;
   }
@@ -2596,24 +2596,13 @@ async function generatePdfBlob(emp, t, courses, totalHours) {
   const pdfWidth = pdf.internal.pageSize.getWidth();   // 210
   const pdfHeight = pdf.internal.pageSize.getHeight(); // 297
 
-  // 寬度填滿，高度按比例
-  const imgWidth = pdfWidth;
-  const imgHeight = pdfWidth * (canvas.height / canvas.width);
-
-  let drawWidth = imgWidth;
-  let drawHeight = imgHeight;
-  let drawX = 0;
-  let drawY = 0;
-
-  // 如果圖太高，縮小以塞進單頁
-  if (imgHeight > pdfHeight) {
-    drawHeight = pdfHeight;
-    drawWidth = pdfHeight * (canvas.width / canvas.height);
-    drawX = (pdfWidth - drawWidth) / 2;
-  }
-
+  // .pdf-cert 已被鎖死成 210mm × 297mm（width × height + overflow: hidden），
+  // 所以 canvas 的長寬比就是 A4 比例，直接 1:1 填滿 PDF 頁面即可。
+  // 不再用 imgHeight > pdfHeight 觸發等比例縮小置中那條路徑（會多出左右白邊）；
+  // 若內容真的爆掉，會在 .pdf-cert 內被 overflow: hidden 裁掉，從底部可看出
+  // 需要縮字級或調行距，而不是讓 jsPDF 把整張縮起來轉移問題。
   const imgData = canvas.toDataURL('image/jpeg', 0.96);
-  pdf.addImage(imgData, 'JPEG', drawX, drawY, drawWidth, drawHeight);
+  pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
 
   wrap.innerHTML = '';
   return pdf.output('blob');
