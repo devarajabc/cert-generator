@@ -2175,7 +2175,7 @@ async function generateRegistrationDocx(employees, t, course) {
   const {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
     AlignmentType, WidthType, BorderStyle, VerticalAlign,
-    ShadingType, PageOrientation
+    ShadingType, PageOrientation, HeightRule, TableLayoutType
   } = D;
 
   // 資料格式（範本實測）：
@@ -2186,7 +2186,9 @@ async function generateRegistrationDocx(employees, t, course) {
   const issueDateStr = `中華民國${t.issueDate.y}年${t.issueDate.m}月${t.issueDate.d}日`;
   const docNumStr = `南市社身字第${t.docNum}號`;
 
-  const border = { style: BorderStyle.SINGLE, size: 6, color: '000000' };
+  // 框線粗細 size 4 = 0.5pt（範本實測；之前用 6 = 0.75pt 略粗）
+  const border = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
+  const noBorder = { style: BorderStyle.NONE, size: 0, color: 'auto' };
   const borders = { top: border, bottom: border, left: border, right: border };
   const cellMargins = { top: 100, bottom: 100, left: 100, right: 100 };
 
@@ -2198,13 +2200,14 @@ async function generateRegistrationDocx(employees, t, course) {
   const totalWidth = colWidths.reduce((s, w) => s + w, 0);  // 11200
 
   // 工具：建立儲存格
-  // options: { isHeader, size, align, columnSpan }
+  // options: { isHeader, size, align, columnSpan, customBorders }
   //   isHeader=true → 套用 DEEAF6 淡藍底色
   //   size: TextRun half-pt 數字（不傳 = 繼承文件預設 12pt）
   //   align: 'center' (預設) 或 'left'
   //   columnSpan: 跨欄數（標題列用 8 跨整列）
+  //   customBorders: 覆寫預設四邊框線（標題列要 top/left/right 隱形）
   const makeCell = (content, width, options = {}) => {
-    const { isHeader = false, size, align = 'center', columnSpan } = options;
+    const { isHeader = false, size, align = 'center', columnSpan, customBorders } = options;
     const lines = Array.isArray(content) ? content : [content];
     const paras = lines.map(line => new Paragraph({
       alignment: align === 'left' ? AlignmentType.LEFT : AlignmentType.CENTER,
@@ -2215,7 +2218,7 @@ async function generateRegistrationDocx(employees, t, course) {
       })]
     }));
     const cellOpts = {
-      borders,
+      borders: customBorders || borders,
       width: { size: width, type: WidthType.DXA },
       margins: cellMargins,
       verticalAlign: VerticalAlign.CENTER,
@@ -2227,10 +2230,20 @@ async function generateRegistrationDocx(employees, t, course) {
   };
 
   // 標題列 — 表格第一列、單一 cell 橫跨 8 欄、18pt 居中
+  // 邊框：只有底邊有線（上/左/右隱形），讓標題視覺上「漂浮」在表格頂端
+  // 而不是被完整方格包起來。範本實測值就是這樣設定的。
+  // 列高 993 DXA = 17.5mm 給 18pt 標題留呼吸空間。
   const titleRow = new TableRow({
+    height: { value: 993, rule: HeightRule.AT_LEAST },
     children: [makeCell('身心障礙者服務人員在職訓練登錄表', totalWidth, {
       size: 36,  // 18pt
-      columnSpan: 8
+      columnSpan: 8,
+      customBorders: {
+        top: noBorder,
+        left: noBorder,
+        right: noBorder,
+        bottom: border  // 只有底線分隔標題與表頭
+      }
     })]
   });
 
@@ -2270,6 +2283,8 @@ async function generateRegistrationDocx(employees, t, course) {
   const table = new Table({
     width: { size: totalWidth, type: WidthType.DXA },
     columnWidths: colWidths,
+    // tblLayout fixed → 欄寬鎖定，不會因內容自動撐大（範本實測值，避免格子跑掉）
+    layout: TableLayoutType.FIXED,
     rows: [titleRow, headerRow, ...employeeRows]
   });
 
