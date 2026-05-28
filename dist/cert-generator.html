@@ -1260,15 +1260,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   .pdf-cert {
     width: 210mm;
-    /* 邊界對齊機構 Word 範本：top/bottom 1 inch、left/right 1.25 inch */
-    padding: 1in 1.25in;
+    /* 邊界 25mm 四邊 — 不直接套範本 Word 的 1in/1.25in 是因為 html2canvas
+       走的字體 metric 比 Word 原生略大，1.25" 邊界下 Mac fallback 字體
+       (BiauKai/Kaiti TC) 算出來的 HTML 高度會剛好超出 A4，觸發 jsPDF 的
+       「整張等比例縮小置中」邏輯（見 generatePdfBlob 約 line 2155），
+       造成 PDF 多出非預期的左右白邊。25mm 邊界給內容更多寬度，讓 Mac
+       字體也能自然塞進一頁，避開那條 shrink-and-center 路徑。 */
+    padding: 25mm 25mm;
     background: white;
     color: #000;
     font-family: 'DFKai-SB', '標楷體', 'BiauKai', 'Kaiti TC', 'Noto Serif TC', serif;
     font-size: 14pt;
     /* 行距 1.4 — Word 預設行距 ~1.0-1.15 偏緊；1.4 留一點呼吸但確保整張塞得進 A4
-       一頁。原本 1.9 在 Mac fallback 字體（BiauKai/Kaiti TC）累積垂直高度後會
-       超出一頁，這也是「Windows 一頁、Mac 變兩頁」的元兇 */
+       一頁。原本 1.9 在 Mac fallback 字體下累積垂直高度後會超出一頁 */
     line-height: 1.4;
     box-sizing: border-box;
   }
